@@ -4,7 +4,7 @@
 
 #include "cube.h"
 
-@interface Cube: OFObject
+@interface Cube: OFObject <OFApplicationDelegate>
 @end
 
 OF_APPLICATION_DELEGATE(Cube)
@@ -90,13 +90,8 @@ int framesinmap = 0;
 @implementation Cube
 - (void)applicationDidFinishLaunching
 {
-	int *argc_, argc;
-	char ***argv_, **argv;
-
-	[[OFApplication sharedApplication] getArgumentCount: &argc_
-					  andArgumentValues: &argv_];
-	argc = *argc_;
-	argv = *argv_;
+	OFAutoreleasePool *pool = [OFAutoreleasePool new];
+	OFArray *arguments = [OFApplication arguments];
 
     bool dedicated = false;
     int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
@@ -106,25 +101,36 @@ int framesinmap = 0;
     #define log(s) conoutf("init: %s", s)
     log("sdl");
 
-    for(int i = 1; i<argc; i++)
-    {
-        char *a = &argv[i][2];
-        if(argv[i][0]=='-') switch(argv[i][1])
-        {
-            case 'd': dedicated = true; break;
-            case 't': fs     = 0; break;
-            case 'w': scr_w  = atoi(a); break;
-            case 'h': scr_h  = atoi(a); break;
-            case 'u': uprate = atoi(a); break;
-            case 'n': sdesc  = a; break;
-            case 'i': ip     = a; break;
-            case 'm': master = a; break;
-            case 'p': passwd = a; break;
-            case 'c': maxcl  = atoi(a); break;
-            default:  conoutf("unknown commandline option");
-        }
-        else conoutf("unknown commandline argument");
-    };
+	for (OFString *arg in arguments) {
+		OFString *a = [arg substringWithRange:
+		    of_range(2, arg.length - 2)];
+
+		if ([arg isEqual: @"-d"])
+			dedicated = true;
+		else if ([arg isEqual: @"-t"])
+			fs = 0;
+		else if ([arg hasPrefix: @"-w"])
+			scr_w = [a decimalValue];
+		else if ([arg hasPrefix: @"-h"])
+			scr_h = [a decimalValue];
+		else if ([arg hasPrefix: @"-u"])
+			uprate = [a decimalValue];
+		else if ([arg hasPrefix: @"-n"])
+			sdesc = strdup([a UTF8String]);
+		else if ([arg hasPrefix: @"-i"])
+			ip = strdup([a UTF8String]);
+		else if ([arg hasPrefix: @"-m"])
+			master = strdup([a UTF8String]);
+		else if ([arg hasPrefix: @"-p"])
+			passwd = strdup([a UTF8String]);
+		else if ([arg hasPrefix: @"-c"])
+			maxcl = [a decimalValue];
+		else if ([arg hasPrefix: @"-"])
+			conoutf("unknown commandline option");
+		else conoutf("unknown commandline argument");
+	}
+
+	[pool release];
 
     #ifdef _DEBUG
     par = SDL_INIT_NOPARACHUTE;
