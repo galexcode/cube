@@ -270,9 +270,15 @@ enum    // function signatures for script functions, see command.cpp
 
 #include <time.h>
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glext.h>
+#ifdef __MACH__
+# include <OpenGL/gl.h>
+# include <OpenGL/glu.h>
+# include <OpenGL/glext.h>
+#else
+# include <GL/gl.h>
+# include <GL/glu.h>
+# include <GL/glext.h>
+#endif
 
 #include <SDL.h>
 #include <SDL_image.h>
