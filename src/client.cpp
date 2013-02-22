@@ -22,7 +22,7 @@ bool allowedittoggle()
 {
     bool allow = !clienthost || gamemode==1;
     if(!allow) conoutf("editing in multiplayer requires coopedit mode (1)");
-    return allow; 
+    return allow;
 };
 
 VARF(rate, 0, 0, 25000, if(clienthost && (!rate || rate>1000)) enet_host_bandwidth_limit (clienthost, rate, rate));
@@ -52,7 +52,7 @@ void writeclientinfo(FILE *f)
 };
 
 void connects(char *servername)
-{   
+{
     disconnect(1);  // reset state
     addserver(servername);
 
@@ -68,7 +68,7 @@ void connects(char *servername)
 
     if(clienthost)
     {
-        enet_host_connect(clienthost, &address, 1); 
+        enet_host_connect(clienthost, &address, 1);
         enet_host_flush(clienthost);
         connecting = lastmillis;
         connattempts = 0;
@@ -82,9 +82,9 @@ void connects(char *servername)
 
 void disconnect(int onlyclean, int async)
 {
-    if(clienthost) 
+    if(clienthost)
     {
-        if(!connecting && !disconnecting) 
+        if(!connecting && !disconnecting)
         {
             enet_peer_disconnect(clienthost->peers);
             enet_host_flush(clienthost);
@@ -107,7 +107,7 @@ void disconnect(int onlyclean, int async)
     c2sinit = false;
     player1->lifesequence = 0;
     loopv(players) zapdynent(players[i]);
-    
+
     localdisconnect();
 
     if(!onlyclean) { stop(); localconnect(); };
@@ -120,7 +120,7 @@ void trydisconnect()
         conoutf("not connected");
         return;
     };
-    if(connecting) 
+    if(connecting)
     {
         conoutf("aborting connection attempt");
         disconnect();
@@ -153,9 +153,9 @@ void addmsg(int rel, int num, int type, ...)
     msg.add(rel);
     msg.add(type);
     va_list marker;
-    va_start(marker, type); 
+    va_start(marker, type);
     loopi(num-1) msg.add(va_arg(marker, int));
-    va_end(marker);  
+    va_end(marker);
 };
 
 void server_err()
@@ -220,7 +220,7 @@ void c2sinfo(dynent *d)                     // send update to the server
         putint(p, (int)(d->vel.z*DVF));
         // pack rest in 1 byte: strafe:2, move:2, onfloor:1, state:3
         putint(p, (d->strafe&3) | ((d->move&3)<<2) | (((int)d->onfloor)<<4) | ((editmode ? CS_EDITING : d->state)<<5) );
- 
+
         if(senditemstoserver)
         {
             packet->flags = ENET_PACKET_FLAG_RELIABLE;
@@ -277,7 +277,7 @@ void gets2c()           // get updates from the server
     {
         conoutf("attempting to connect...");
         connecting = lastmillis;
-        ++connattempts; 
+        ++connattempts;
         if(connattempts > 3)
         {
             conoutf("could not connect to server");
@@ -293,7 +293,7 @@ void gets2c()           // get updates from the server
             connecting = 0;
             throttle();
             break;
-         
+
         case ENET_EVENT_TYPE_RECEIVE:
             if(disconnecting) conoutf("attempting to disconnect...");
             else localservertoclient(event.packet->data, event.packet->dataLength);

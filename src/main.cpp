@@ -85,7 +85,7 @@ int islittleendian = 1;
 int framesinmap = 0;
 
 int main(int argc, char **argv)
-{    
+{
     bool dedicated = false;
     int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
     char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
     #define log(s) conoutf("init: %s", s)
     log("sdl");
-    
+
     for(int i = 1; i<argc; i++)
     {
         char *a = &argv[i][2];
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         }
         else conoutf("unknown commandline argument");
     };
-    
+
     #ifdef _DEBUG
     par = SDL_INIT_NOPARACHUTE;
     fs = 0;
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
     initclient();
     initserver(dedicated, uprate, sdesc, ip, master, passwd, maxcl);  // never returns if dedicated
-      
+
     log("world");
     empty_world(7, true);
 
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
     log("localconnect");
     localconnect();
     changemap("metl3");		// if this map is changed, also change depthcorrect()
-    
+
     log("mainloop");
     int ignore = 5;
     for(;;)
@@ -210,8 +210,8 @@ int main(int argc, char **argv)
                     quit();
                     break;
 
-                case SDL_KEYDOWN: 
-                case SDL_KEYUP: 
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
                     keypress(event.key.keysym.sym, event.key.state==SDL_PRESSED, event.key.keysym.unicode);
                     break;
 

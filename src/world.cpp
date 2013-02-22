@@ -102,7 +102,7 @@ void remip(block &b, int level)
             };
             r->floor = floor;
             r->ceil = ceil;
-        };       
+        };
         if(r->type==CORNER) goto mip;                       // special case: don't ever split even if textures etc are different
         r->defer = 1;
         if(SOLID(r))
@@ -175,7 +175,7 @@ int closestent()        // used for delent and edit mode ent display
             bdist = dist;
         };
     };
-    return bdist==99999 ? -1 : best; 
+    return bdist==99999 ? -1 : best;
 };
 
 void entproperty(int prop, int amount)
@@ -218,9 +218,9 @@ entity *newentity(int x, int y, int z, char *what, int v1, int v2, int v3, int v
         case LIGHT:
             if(v1>32) v1 = 32;
             if(!v1) e.attr1 = 16;
-            if(!v2 && !v3 && !v4) e.attr2 = 255;          
+            if(!v2 && !v3 && !v4) e.attr2 = 255;
             break;
-            
+
         case MAPMODEL:
             e.attr4 = e.attr3;
             e.attr3 = e.attr2;
@@ -230,7 +230,7 @@ entity *newentity(int x, int y, int z, char *what, int v1, int v2, int v3, int v
         case PLAYERSTART:
             e.attr1 = (int)player1->yaw;
             break;
-    };           
+    };
     addmsg(1, 10, SV_EDITENT, ents.length(), type, e.x, e.y, e.z, e.attr1, e.attr2, e.attr3, e.attr4);
     ents.add(*((entity *)&e)); // unsafe!
     if(type==LIGHT) calclight();
@@ -238,7 +238,7 @@ entity *newentity(int x, int y, int z, char *what, int v1, int v2, int v3, int v
 };
 
 void clearents(char *name)
-{  
+{
     int type = findtype(name);
     if(noteditmode() || multiplayer()) return;
     loopv(ents)
@@ -299,7 +299,7 @@ void setupworld(int factor)
 
 void empty_world(int factor, bool force)    // main empty world creation routine, if passed factor -1 will enlarge old world by 1
 {
-    if(!force && noteditmode()) return; 
+    if(!force && noteditmode()) return;
     cleardlights();
     pruneundos();
     sqr *oldworld = world;
@@ -308,7 +308,7 @@ void empty_world(int factor, bool force)    // main empty world creation routine
     if(factor<SMALLEST_FACTOR) factor = SMALLEST_FACTOR;
     if(factor>LARGEST_FACTOR) factor = LARGEST_FACTOR;
     setupworld(factor);
-    
+
     loop(x,ssize) loop(y,ssize)
     {
         sqr *s = S(x,y);
@@ -322,7 +322,7 @@ void empty_world(int factor, bool force)    // main empty world creation routine
         s->vdelta = 0;
         s->defer = 0;
     };
-    
+
     strncpy(hdr.head, "CUBE", 4);
     hdr.version = MAPVERSION;
     hdr.headersize = sizeof(header);
@@ -347,10 +347,10 @@ void empty_world(int factor, bool force)    // main empty world creation routine
         loopi(15) hdr.reserved[i] = 0;
         loopk(3) loopi(256) hdr.texlists[k][i] = i;
         ents.setsize(0);
-        block b = { 8, 8, ssize-16, ssize-16 }; 
+        block b = { 8, 8, ssize-16, ssize-16 };
         edittypexy(SPACE, b);
     };
-    
+
     calclight();
     startmap("base/unnamed");
     if(oldworld)

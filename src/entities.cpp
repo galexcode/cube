@@ -4,10 +4,10 @@
 
 vector<entity> ents;
 
-char *entmdlnames[] = 
+char *entmdlnames[] =
 {
 	"shells", "bullets", "rockets", "rrounds", "health", "boost",
-	"g_armour", "y_armour", "quad",	"teleporter",     
+	"g_armour", "y_armour", "quad",	"teleporter",
 };
 
 int triggertime = 0;
@@ -39,20 +39,20 @@ void renderentities()
 				renderent(e, entmdlnames[e.type-I_SHELLS], (float)(1+sin(lastmillis/100.0+e.x+e.y)/20), lastmillis/10.0f);
             }
 			else switch(e.attr2)
-            {			
+            {
 				case 1:
 				case 3:
 					continue;
-					
-                case 2: 
+
+                case 2:
                 case 0:
 					if(!e.spawned) continue;
 					renderent(e, "carrot", (float)(1+sin(lastmillis/100.0+e.x+e.y)/20), lastmillis/(e.attr2 ? 1.0f : 10.0f));
 					break;
-					
+
                 case 4: renderent(e, "switch2", 3,      (float)e.attr3*90, (!e.spawned && !triggertime) ? 1  : 0, (e.spawned || !triggertime) ? 1 : 2,  triggertime, 1050.0f);  break;
                 case 5: renderent(e, "switch1", -0.15f, (float)e.attr3*90, (!e.spawned && !triggertime) ? 30 : 0, (e.spawned || !triggertime) ? 1 : 30, triggertime, 35.0f); break;
-            }; 
+            };
         };
     };
 };
@@ -174,7 +174,7 @@ void pickup(int n, dynent *d)
         case I_QUAD:
             additem(n, d->quadmillis, 60);
             break;
-            
+
         case CARROT:
             ents[n].spawned = false;
             triggertime = lastmillis;
@@ -189,7 +189,7 @@ void pickup(int n, dynent *d)
             teleport(n, d);
             break;
         };
-        
+
         case JUMPPAD:
         {
             static int lastjumppad = 0;
