@@ -1,0 +1,17 @@
+bin
+build
+enet/*.o
+enet/.deps
+enet/aclocal.m4
+enet/autom4te.cache
+enet/config.log
+enet/config.status
+enet/configure
+enet/include/Makefile
+enet/include/Makefile.in
+enet/include/enet/Makefile
+enet/include/enet/Makefile.in
+enet/libenet.a
+enet/Makefile
+enet/Makefile.in
+*~
