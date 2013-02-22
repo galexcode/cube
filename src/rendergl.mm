@@ -47,7 +47,11 @@ void gl_init(int w, int h)
 
     char *exts = (char *)glGetString(GL_EXTENSIONS);
 
+#ifdef __MACH__
+    if(strstr(exts, "GL_ARB_texture_env_combine")) hasoverbright = true;
+#else
     if(strstr(exts, "GL_EXT_texture_env_combine")) hasoverbright = true;
+#endif
     else conoutf("WARNING: cannot use overbright lighting, using old lighting model!");
 
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &glmaxtexsize);
@@ -68,34 +72,68 @@ void cleangl()
     if(qsphere) gluDeleteQuadric(qsphere);
 };
 
-bool installtex(int tnum, char *texname, int &xs, int &ys, bool clamp)
+bool
+installtex(int tnum, char *texname, int &xs, int &ys, bool clamp)
 {
-    SDL_Surface *s = IMG_Load(texname);
-    if(!s) { conoutf("couldn't load texture %s", texname); return false; };
-    if(s->format->BitsPerPixel!=24) { conoutf("texture must be 24bpp: %s", texname); return false; };
-    // loopi(s->w*s->h*3) { uchar *p = (uchar *)s->pixels+i; *p = 255-*p; };
-    glBindTexture(GL_TEXTURE_2D, tnum);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //NEAREST);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    xs = s->w;
-    ys = s->h;
-    while(xs>glmaxtexsize || ys>glmaxtexsize) { xs /= 2; ys /= 2; };
-    void *scaledimg = s->pixels;
-    if(xs!=s->w)
-    {
-        conoutf("warning: quality loss: scaling %s", texname);     // for voodoo cards under linux
-        scaledimg = alloc(xs*ys*3);
-        gluScaleImage(GL_RGB, s->w, s->h, GL_UNSIGNED_BYTE, s->pixels, xs, ys, GL_UNSIGNED_BYTE, scaledimg);
-    };
-    if(gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, xs, ys, GL_RGB, GL_UNSIGNED_BYTE, scaledimg)) fatal("could not build mipmaps");
-    if(xs!=s->w) free(scaledimg);
-    SDL_FreeSurface(s);
-    return true;
-};
+	SDL_Surface *s = IMG_Load(texname);
+	if (!s) {
+		conoutf("couldn't load texture %s", texname);
+		return false;
+	}
+
+	GLenum fmt;
+	switch (s->format->BitsPerPixel) {
+	case 24:
+		fmt = (s->format->Rmask == 0xFF ? GL_RGB : GL_BGR);
+		break;
+	case 32:
+		fmt = (s->format->Rmask == 0xFF ? GL_RGBA : GL_BGRA);
+		break;
+	default:
+		conoutf("texture must be 24bpp or 32bpp: %s", texname);
+		return false;
+	}
+
+	// loopi(s->w*s->h*3) { uchar *p = (uchar *)s->pixels+i; *p = 255-*p; };
+	glBindTexture(GL_TEXTURE_2D, tnum);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+	    (clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+	    (clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+	    GL_LINEAR_MIPMAP_LINEAR); //NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	xs = s->w;
+	ys = s->h;
+
+	while (xs > glmaxtexsize || ys > glmaxtexsize) {
+		xs /= 2;
+		ys /= 2;
+	}
+
+	void *scaledimg = s->pixels;
+	if (xs != s->w) {
+		// for voodoo cards under linux
+		conoutf("warning: quality loss: scaling %s", texname);
+		scaledimg = alloc(xs * ys * 3);
+		gluScaleImage(fmt, s->w, s->h, GL_UNSIGNED_BYTE, s->pixels, xs,
+		    ys, GL_UNSIGNED_BYTE, scaledimg);
+	}
+
+	if (gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, xs, ys, fmt,
+	    GL_UNSIGNED_BYTE, scaledimg))
+		fatal("could not build mipmaps");
+
+	if (xs != s->w)
+		free(scaledimg);
+
+	SDL_FreeSurface(s);
+
+	return true;
+}
 
 // management of texture slots
 // each texture slot can have multople texture frames, of which currently only the first is used
