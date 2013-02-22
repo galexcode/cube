@@ -1,66 +1,61 @@
-CXX=g++
-CXXOPTFLAGS=-Wall -O3 -fsigned-char -fomit-frame-pointer
-CXXFLAGS=$(CXXOPTFLAGS) -I../enet/include `sdl-config --cflags`
+OPT = -O3 -fomit-frame-pointer
+CPPFLAGS = -I../enet/include `sdl-config --cflags`
+LIBS = -L../enet -lenet `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU -lX11
 
-CLIENT_LIBS=-L../enet -lenet `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU -lX11
-CLIENT_OBJS= \
-	client.o \
-	clientextras.o \
-	clientgame.o \
-	clients2c.o \
-	command.o \
-	console.o \
-	editing.o \
-	entities.o \
-	main.o \
-	menus.o \
-	monster.o \
-	physics.o \
-	rendercubes.o \
-	renderextras.o \
-	rendergl.o \
-	rendermd2.o \
-	renderparticles.o \
-	rendertext.o \
-	rndmap.o \
-	savegamedemo.o \
-	server.o \
-	serverbrowser.o \
-	serverms.o \
-	serverutil.o \
-	sound.o \
-	tools.o \
-	weapon.o \
-	world.o \
-	worldio.o \
-	worldlight.o \
-	worldocull.o \
-	worldrender.o
+CLIENT_SRCS = client.mm			\
+	      clientextras.mm		\
+	      clientgame.mm		\
+	      clients2c.mm		\
+	      command.mm 		\
+	      console.mm		\
+	      editing.mm		\
+	      entities.mm		\
+	      main.mm			\
+	      menus.mm			\
+	      monster.mm		\
+	      physics.mm		\
+	      rendercubes.mm		\
+	      renderextras.mm		\
+	      rendergl.mm		\
+	      rendermd2.mm		\
+	      renderparticles.mm	\
+	      rendertext.mm 		\
+	      rndmap.mm 		\
+	      savegamedemo.mm 		\
+	      server.mm 		\
+	      serverbrowser.mm 		\
+	      serverms.mm 		\
+	      serverutil.mm 		\
+	      sound.mm 			\
+	      tools.mm 			\
+	      weapon.mm 		\
+	      world.mm 			\
+	      worldio.mm 		\
+	      worldlight.mm 		\
+	      worldocull.mm 		\
+	      worldrender.mm
 
-SERVER_LIBS=-L../enet -lenet
-SERVER_OBJS= \
-	standalone.o \
-	serverms.o \
-	server.o \
-	tools.o
+SERVER_SRCS = server.mm		\
+	      serverms.mm	\
+	      serverutil.mm	\
+	      tools.mm
 
-default: all
-
-all: enet client server
+all: ../bin/client ../bin/server
 
 enet:
-	-make -C ../enet all
+	make -C ../enet all
 
 clean:
-	-rm -f $(SERVER_OBJS) $(CLIENT_OBJS) cube_server cube_client
-	-make -C ../enet/ clean
+	rm -fr ../build ../bin
+	make -C ../enet clean
 
-standalone.o:
-	$(CXX) $(CXXFLAGS) -DSTANDALONE -o standalone.o -c serverutil.cpp
+../bin/client: enet
+	@mkdir -p ../bin
+	@objfw-compile --builddir ../build/client -o $@	\
+		${CLIENT_SRCS} ${OPT} ${CPPFLAGS} ${LIBS}
 
-client: $(CLIENT_OBJS)
-	$(CXX) $(CXXFLAGS) -o cube_client $(CLIENT_OBJS) $(CLIENT_LIBS)
-
-server: $(SERVER_OBJS)
-	$(CXX) $(CXXFLAGS) -o cube_server $(SERVER_OBJS) $(SERVER_LIBS)
-
+../bin/server: enet
+	@mkdir -p ../bin
+	@objfw-compile --builddir ../build/server -o $@   \
+		${SERVER_SRCS} ${OPT} ${CPPFLAGS} ${LIBS} \
+		-DSTANDALONE
