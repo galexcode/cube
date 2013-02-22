@@ -1,38 +1,41 @@
 // main.cpp: initialisation & main loop
 
+#import <ObjFW/ObjFW.h>
+
 #include "cube.h"
+
+@interface Cube: OFObject
+@end
+
+OF_APPLICATION_DELEGATE(Cube)
 
 void cleanup(char *msg)         // single program exit point;
 {
-	stop();
-    disconnect(true);
-    writecfg();
-    cleangl();
-    cleansound();
-    cleanupserver();
-    SDL_ShowCursor(1);
-    if(msg)
-    {
-        #ifdef WIN32
-        MessageBox(NULL, msg, "cube fatal error", MB_OK|MB_SYSTEMMODAL);
-        #else
-        printf(msg);
-        #endif
-    };
-    SDL_Quit();
-    exit(1);
+	SDL_ShowCursor(1);
+
+	if (msg) {
+#ifdef WIN32
+		MessageBox(NULL, msg, "cube fatal error", MB_OK|MB_SYSTEMMODAL);
+#else
+		printf(msg);
+#endif
+	}
+
+	SDL_Quit();
 };
 
 void quit()                     // normal exit
 {
-    writeservercfg();
-    cleanup(NULL);
+	writeservercfg();
+	cleanup(NULL);
+	[OFApplication terminate];
 };
 
 void fatal(char *s, char *o)    // failure exit
 {
-    sprintf_sd(msg)("%s%s (%s)\n", s, o, SDL_GetError());
-    cleanup(msg);
+	sprintf_sd(msg)("%s%s (%s)\n", s, o, SDL_GetError());
+	cleanup(msg);
+	[OFApplication terminateWithStatus: 1];
 };
 
 void *alloc(int s)              // for some big chunks... most other allocs use the memory pool
@@ -84,8 +87,17 @@ VARP(minmillis, 0, 5, 1000);
 int islittleendian = 1;
 int framesinmap = 0;
 
-int main(int argc, char **argv)
+@implementation Cube
+- (void)applicationDidFinishLaunching
 {
+	int *argc_, argc;
+	char ***argv_, **argv;
+
+	[[OFApplication sharedApplication] getArgumentCount: &argc_
+					  andArgumentValues: &argv_];
+	argc = *argc_;
+	argv = *argv_;
+
     bool dedicated = false;
     int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
     char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
@@ -231,7 +243,17 @@ int main(int argc, char **argv)
         };
     };
     quit();
-    return 1;
-};
+    [OFApplication terminateWithStatus: 1];
+}
 
-
+- (void)applicationWillTerminate
+{
+	stop();
+	disconnect(true);
+	writecfg();
+	cleangl();
+	cleansound();
+	cleanupserver();
+	SDL_ShowCursor(1);
+}
+@end

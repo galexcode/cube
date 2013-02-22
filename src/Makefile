@@ -2,7 +2,8 @@ OPT = -O3 -fomit-frame-pointer
 CPPFLAGS = -I../enet/include `sdl-config --cflags`
 LIBS = -L../enet -lenet `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU -lX11
 
-CLIENT_SRCS = client.mm			\
+CLIENT_SRCS = Cube.mm			\
+	      client.mm			\
 	      clientextras.mm		\
 	      clientgame.mm		\
 	      clients2c.mm		\
@@ -10,7 +11,6 @@ CLIENT_SRCS = client.mm			\
 	      console.mm		\
 	      editing.mm		\
 	      entities.mm		\
-	      main.mm			\
 	      menus.mm			\
 	      monster.mm		\
 	      physics.mm		\
