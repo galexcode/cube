@@ -22,14 +22,13 @@ struct md2_frame {
 
 @interface MD2: OFObject
 {
-@public
 	int _numGlCommands;
-	int* _glCommands;
+	int *_glCommands;
 	int _numTriangles;
 	int _frameSize;
 	int _numFrames;
 	int _numVerts;
-	char* _frames;
+	char *_frames;
 	vec **_mverts;
 	int _displaylist;
 	int _displaylistverts;
@@ -40,7 +39,9 @@ struct md2_frame {
 	bool _loaded;
 }
 
-@property (copy, nonatomic) OFString *loadName;
+@property mapmodelinfo &mmi;
+@property (copy) OFString *loadName;
+@property int mdlnum;
 
 + (instancetype)modelForName: (OFString*)name;
 - (void)CB_loadFile: (OFString*)filename;

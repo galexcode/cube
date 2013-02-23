@@ -17,7 +17,9 @@ snap(int sn, float f)
 }
 
 @implementation MD2
+@synthesize mmi = _mmi;
 @synthesize loadName = _loadName;
+@synthesize mdlnum = _mdlnum;
 
 + (instancetype)modelForName: (OFString*)name
 {
@@ -29,9 +31,9 @@ snap(int sn, float f)
 		return [[model retain] autorelease];
 
 	model = [[MD2 new] autorelease];
-	model->_mdlnum = modelnum++;
+	model.mdlnum = modelnum++;
 	mapmodelinfo mmi = { 2, 2, 0, 0, "" };
-	model->_mmi = mmi;
+	model.mmi = mmi;
 	model.loadName = name;
 
 	[mdllookup setObject: model
@@ -223,7 +225,7 @@ mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 
 	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
 		[model.loadName UTF8String] };
-	model->_mmi = mmi;
+	model.mmi = mmi;
 
 	[mapmodels addObject: model];
 
@@ -241,7 +243,7 @@ getmminfo(int i)
 {
 	if (i < mapmodels.count) {
 		MD2 *m = [mapmodels objectAtIndex: i];
-		return m->_mmi;
+		return m.mmi;
 	}
 
 	return *(mapmodelinfo*)0;
@@ -265,7 +267,7 @@ rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
 
 	int xs, ys;
 	glBindTexture(GL_TEXTURE_2D,
-	    tex ? lookuptexture(tex, xs, ys) : FIRSTMDL + m->_mdlnum);
+	    tex ? lookuptexture(tex, xs, ys) : FIRSTMDL + m.mdlnum);
 
 	int ix = (int)x;
 	int iy = (int)z;
