@@ -3,6 +3,7 @@ CPPFLAGS = -I../enet/include `sdl-config --cflags`
 LIBS = -L../enet -lenet `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU -lX11
 
 CLIENT_SRCS = Cube.mm			\
+	      MD2.mm			\
 	      client.mm			\
 	      clientextras.mm		\
 	      clientgame.mm		\
@@ -17,7 +18,6 @@ CLIENT_SRCS = Cube.mm			\
 	      rendercubes.mm		\
 	      renderextras.mm		\
 	      rendergl.mm		\
-	      rendermd2.mm		\
 	      renderparticles.mm	\
 	      rendertext.mm 		\
 	      rndmap.mm 		\
