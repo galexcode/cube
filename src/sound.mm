@@ -62,7 +62,7 @@ void initsound()
         };
 	    Mix_AllocateChannels(MAXCHAN);
     #else
-        if(FSOUND_GetVersion()<FMOD_VERSION) fatal("old FMOD dll");
+        if(FSOUND_GetVersion()<FMOD_VERSION) fatal(@"old FMOD dll");
         if(!FSOUND_Init(SOUNDFREQ, MAXCHAN, FSOUND_INIT_GLOBALFOCUS))
         {
             conoutf("sound init failed (FMOD): %d", FSOUND_GetError());

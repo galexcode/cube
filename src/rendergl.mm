@@ -58,7 +58,7 @@ void gl_init(int w, int h)
 
     purgetextures();
 
-    if(!(qsphere = gluNewQuadric())) fatal("glu sphere");
+    if(!(qsphere = gluNewQuadric())) [Cube fatalError: @"glu sphere"];
     gluQuadricDrawStyle(qsphere, GLU_FILL);
     gluQuadricOrientation(qsphere, GLU_INSIDE);
     gluQuadricTexture(qsphere, GL_TRUE);
@@ -73,7 +73,7 @@ void cleangl()
 };
 
 bool
-installtex(int tnum, char *texname, int &xs, int &ys, bool clamp)
+installtex(int tnum, const char *texname, int &xs, int &ys, bool clamp)
 {
 	SDL_Surface *s = IMG_Load(texname);
 	if (!s) {
@@ -125,7 +125,7 @@ installtex(int tnum, char *texname, int &xs, int &ys, bool clamp)
 
 	if (gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, xs, ys, fmt,
 	    GL_UNSIGNED_BYTE, scaledimg))
-		fatal("could not build mipmaps");
+		[Cube fatalError: @"could not build mipmaps"];
 
 	if (xs != s->w)
 		free(scaledimg);
@@ -199,7 +199,7 @@ int lookuptexture(int tex, int &xs, int &ys)
         };
     };
 
-    if(curtex==MAXTEX) fatal("loaded too many textures");
+    if(curtex==MAXTEX) [Cube fatalError: @"loaded too many textures"];
 
     int tnum = curtex+FIRSTTEX;
     strcpy_s(texname[curtex], mapname[tex][frame]);

@@ -15,11 +15,14 @@ void setarraypointers()
 
 void reallocv()
 {
-    verts = (vertex *)realloc(verts, (curmaxverts *= 2)*sizeof(vertex));
-    curmaxverts -= 10;
-    if(!verts) fatal("no vertex memory!");
-    setarraypointers();
-};
+	verts = (vertex*)realloc(verts, (curmaxverts *= 2) * sizeof(vertex));
+	curmaxverts -= 10;
+
+	if (verts == NULL)
+		[Cube fatalError: @"no vertex memory!"];
+
+	setarraypointers();
+}
 
 // generating the actual vertices is done dynamically every frame and sits at the
 // leaves of all these functions, and are part of the cpu bottleneck on really slow

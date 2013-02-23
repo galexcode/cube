@@ -25,6 +25,8 @@
 #include <new.h>
 #endif
 
+#import <ObjFW/ObjFW.h>
+
 #ifdef NULL
 #undef NULL
 #endif

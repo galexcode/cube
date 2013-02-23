@@ -1,7 +1,5 @@
 // implementation of generic tools
 
-#import <ObjFW/ObjFW.h>
-
 #include "tools.h"
 #include <new>
 

@@ -1,48 +1,19 @@
 // main.cpp: initialisation & main loop
 
-#import <ObjFW/ObjFW.h>
-
 #include "cube.h"
-
-@interface Cube: OFObject <OFApplicationDelegate>
-@end
 
 OF_APPLICATION_DELEGATE(Cube)
 
-void cleanup(char *msg)         // single program exit point;
+// for some big chunks... most other allocs use the memory pool
+void*
+alloc(int s)
 {
-	SDL_ShowCursor(1);
+	void *b = calloc(1, s);
 
-	if (msg) {
-#ifdef WIN32
-		MessageBox(NULL, msg, "cube fatal error", MB_OK|MB_SYSTEMMODAL);
-#else
-		printf(msg);
-#endif
-	}
+	if (b == NULL)
+		[Cube fatalError: @"out of memory!"];
 
-	SDL_Quit();
-};
-
-void quit()                     // normal exit
-{
-	writeservercfg();
-	cleanup(NULL);
-	[OFApplication terminate];
-};
-
-void fatal(char *s, char *o)    // failure exit
-{
-	sprintf_sd(msg)("%s%s (%s)\n", s, o, SDL_GetError());
-	cleanup(msg);
-	[OFApplication terminateWithStatus: 1];
-};
-
-void *alloc(int s)              // for some big chunks... most other allocs use the memory pool
-{
-    void *b = calloc(1,s);
-    if(!b) fatal("out of memory!");
-    return b;
+	return b;
 };
 
 int scr_w = 640;
@@ -72,6 +43,12 @@ void screenshot()
     };
 };
 
+static void
+quit()
+{
+	[Cube quit];
+}
+
 COMMAND(screenshot, ARG_NONE);
 COMMAND(quit, ARG_NONE);
 
@@ -88,6 +65,42 @@ int islittleendian = 1;
 int framesinmap = 0;
 
 @implementation Cube
+/* single program exit point */
++ (void)cleanUpAndShowMessage: (OFString*)message
+{
+	SDL_ShowCursor(1);
+
+	if (message != nil) {
+#ifdef _WIN32
+		MessageBoxW(NULL, [message UTF16String], L"cube fatal error",
+		    MB_OK | MB_SYSTEMMODAL);
+#else
+		[of_stdout writeString: message];
+#endif
+	}
+
+	SDL_Quit();
+}
+
+/* normal exit */
++ (void)quit
+{
+	writeservercfg();
+
+	[self cleanUpAndShowMessage: nil];
+
+	[OFApplication terminate];
+}
+
+/* failure exit */
++ (void)fatalError: (OFString*)message
+{
+	[self cleanUpAndShowMessage:
+	    [OFString stringWithFormat: @"%@ (%s)\n", message, SDL_GetError()]];
+
+	[OFApplication terminateWithStatus: 1];
+}
+
 - (void)applicationDidFinishLaunching
 {
 	OFAutoreleasePool *pool = [OFAutoreleasePool new];
@@ -132,67 +145,76 @@ int framesinmap = 0;
 
 	[pool release];
 
-    #ifdef _DEBUG
-    par = SDL_INIT_NOPARACHUTE;
-    fs = 0;
-    #endif
+#ifdef _DEBUG
+	par = SDL_INIT_NOPARACHUTE;
+	fs = 0;
+#endif
 
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|par)<0) fatal("Unable to initialize SDL");
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | par) < 0)
+		[Cube fatalError: @"Unable to initialize SDL"];
 
-    log("net");
-    if(enet_initialize()<0) fatal("Unable to initialise network module");
+	log("net");
+	if (enet_initialize() < 0)
+		[Cube fatalError: @"Unable to initialise network module"];
 
-    initclient();
-    initserver(dedicated, uprate, sdesc, ip, master, passwd, maxcl);  // never returns if dedicated
+	initclient();
+	// never returns if dedicated
+	initserver(dedicated, uprate, sdesc, ip, master, passwd, maxcl);
 
-    log("world");
-    empty_world(7, true);
+	log("world");
+	empty_world(7, true);
 
-    log("video: sdl");
-    if(SDL_InitSubSystem(SDL_INIT_VIDEO)<0) fatal("Unable to initialize SDL Video");
+	log("video: sdl");
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+		[Cube fatalError: @"Unable to initialize SDL Video"];
 
-    log("video: mode");
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    if(SDL_SetVideoMode(scr_w, scr_h, 0, SDL_OPENGL|fs)==NULL) fatal("Unable to create OpenGL screen");
+	log("video: mode");
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	if (SDL_SetVideoMode(scr_w, scr_h, 0, SDL_OPENGL | fs) == NULL)
+		[Cube fatalError: @"Unable to create OpenGL screen"];
 
-    log("video: misc");
-    SDL_WM_SetCaption("cube engine", NULL);
-    SDL_WM_GrabInput(SDL_GRAB_ON);
-    keyrepeat(false);
-    SDL_ShowCursor(0);
+	log("video: misc");
+	SDL_WM_SetCaption("cube engine", NULL);
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+	keyrepeat(false);
+	SDL_ShowCursor(0);
 
-    log("gl");
-    gl_init(scr_w, scr_h);
+	log("gl");
+	gl_init(scr_w, scr_h);
 
-    log("basetex");
-    int xs, ys;
-    if(!installtex(2,  path(newstring("data/newchars.png")), xs, ys) ||
-       !installtex(3,  path(newstring("data/martin/base.png")), xs, ys) ||
-       !installtex(6,  path(newstring("data/martin/ball1.png")), xs, ys) ||
-       !installtex(7,  path(newstring("data/martin/smoke.png")), xs, ys) ||
-       !installtex(8,  path(newstring("data/martin/ball2.png")), xs, ys) ||
-       !installtex(9,  path(newstring("data/martin/ball3.png")), xs, ys) ||
-       !installtex(4,  path(newstring("data/explosion.jpg")), xs, ys) ||
-       !installtex(5,  path(newstring("data/items.png")), xs, ys) ||
-       !installtex(1,  path(newstring("data/crosshair.png")), xs, ys)) fatal("could not find core textures (hint: run cube from the parent of the bin directory)");
+	log("basetex");
+	int xs, ys;
+	if (!installtex(2,  path(newstring("data/newchars.png")), xs, ys) ||
+	    !installtex(3,  path(newstring("data/martin/base.png")), xs, ys) ||
+	    !installtex(6,  path(newstring("data/martin/ball1.png")), xs, ys) ||
+	    !installtex(7,  path(newstring("data/martin/smoke.png")), xs, ys) ||
+	    !installtex(8,  path(newstring("data/martin/ball2.png")), xs, ys) ||
+	    !installtex(9,  path(newstring("data/martin/ball3.png")), xs, ys) ||
+	    !installtex(4,  path(newstring("data/explosion.jpg")), xs, ys) ||
+	    !installtex(5,  path(newstring("data/items.png")), xs, ys) ||
+	    !installtex(1,  path(newstring("data/crosshair.png")), xs, ys))
+		[Cube fatalError: @"could not find core textures (hint: run "
+				  @"cube from the parent of the bin "
+				  @"directory)"];
 
-    log("sound");
-    initsound();
+	log("sound");
+	initsound();
 
-    log("cfg");
-    newmenu("frags\tpj\tping\tteam\tname");
-    newmenu("ping\tplr\tserver");
-    exec("data/keymap.cfg");
-    exec("data/menus.cfg");
-    exec("data/prefabs.cfg");
-    exec("data/sounds.cfg");
-    exec("servers.cfg");
-    if(!execfile("config.cfg")) execfile("data/defaults.cfg");
-    exec("autoexec.cfg");
+	log("cfg");
+	newmenu("frags\tpj\tping\tteam\tname");
+	newmenu("ping\tplr\tserver");
+	exec("data/keymap.cfg");
+	exec("data/menus.cfg");
+	exec("data/prefabs.cfg");
+	exec("data/sounds.cfg");
+	exec("servers.cfg");
+	if(!execfile("config.cfg")) execfile("data/defaults.cfg");
+	exec("autoexec.cfg");
 
-    log("localconnect");
-    localconnect();
-    changemap("metl3");		// if this map is changed, also change depthcorrect()
+	log("localconnect");
+	localconnect();
+	// if this map is changed, also change depthcorrect()
+	changemap("metl3");
 
     log("mainloop");
     int ignore = 5;
@@ -225,7 +247,7 @@ int framesinmap = 0;
             switch(event.type)
             {
                 case SDL_QUIT:
-                    quit();
+                    [Cube quit];
                     break;
 
                 case SDL_KEYDOWN:
@@ -248,8 +270,7 @@ int framesinmap = 0;
             };
         };
     };
-    quit();
-    [OFApplication terminateWithStatus: 1];
+    [Cube quit];
 }
 
 - (void)applicationWillTerminate

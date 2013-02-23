@@ -39,7 +39,7 @@ extern void writeservercfg();
 extern void gl_init(int w, int h);
 extern void cleangl();
 extern void gl_drawframe(int w, int h, float curfps);
-extern bool installtex(int tnum, char *texname, int &xs, int &ys, bool clamp = false);
+extern bool installtex(int tnum, const char *texname, int &xs, int &ys, bool clamp = false);
 extern void mipstats(int a, int b, int c);
 extern void vertf(float v1, float v2, float v3, sqr *ls, float t1, float t2);
 extern void addstrip(int tex, int start, int n);
@@ -124,7 +124,6 @@ extern void computeraytable(float vx, float vy);
 extern int isoccluded(float vx, float vy, float cx, float cy, float csize);
 
 // main
-extern void fatal(char *s, char *o = "");
 extern void *alloc(int s);
 extern void keyrepeat(bool on);
 
@@ -191,7 +190,7 @@ extern void initsound();
 extern void cleansound();
 
 // rendermd2
-extern void rendermodel(char *mdl, int frame, int range, int tex, float rad, float x, float y, float z, float yaw, float pitch, bool teammate, float scale, float speed, int snap = 0, int basetime = 0);
+extern void rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x, float y, float z, float yaw, float pitch, bool teammate, float scale, float speed, int snap = 0, int basetime = 0);
 extern mapmodelinfo &getmminfo(int i);
 
 // server

@@ -1,5 +1,9 @@
 // misc useful functions used by the server
 
+#ifdef STANDALONE
+# define NO_CUBE_INTERFACE
+#endif
+
 #include "cube.h"
 
 // all network traffic is in 32bit ints, which are then compressed using the following simple scheme (assumes that most values are small).
@@ -89,9 +93,21 @@ ENetPacket *recvmap(int n)
 
 #ifdef STANDALONE
 
+@interface Cube: OFObject
++ (void)fatalError: (OFString*)message;
+@end
+
+@implementation Cube
++ (void)fatalError: (OFString*)message
+{
+	cleanupserver();
+	[of_stdout writeFormat: @"servererror: %@\n", message];
+	[OFApplication terminateWithStatus: 1];
+}
+@end
+
 void localservertoclient(uchar *buf, int len) {};
-void fatal(char *s, char *o) { cleanupserver(); printf("servererror: %s\n", s); exit(1); };
-void *alloc(int s) { void *b = calloc(1,s); if(!b) fatal("no memory!"); return b; };
+void *alloc(int s) { void *b = calloc(1,s); if(!b) [Cube fatalError: @"no memory!"]; return b; };
 
 int main(int argc, char* argv[])
 {
@@ -113,7 +129,7 @@ int main(int argc, char* argv[])
         };
     };
 
-    if(enet_initialize()<0) fatal("Unable to initialise network module");
+    if(enet_initialize()<0) [Cube fatalError: @"Unable to initialise network module"];
     initserver(true, uprate, sdesc, ip, master, passwd, maxcl);
     return 0;
 };

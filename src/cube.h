@@ -1,6 +1,16 @@
 // one big bad include file for the whole engine... nasty!
 
+#import <ObjFW/ObjFW.h>
+
 #include "tools.h"
+
+#ifndef NO_CUBE_INTERFACE
+@interface Cube: OFObject <OFApplicationDelegate>
++ (void)cleanUpAndShowMessage: (OFString*)message;
++ (void)quit;
++ (void)fatalError: (OFString*)message;
+@end
+#endif
 
 enum                            // block types, order matters!
 {
@@ -93,7 +103,7 @@ struct header                   // map file format header
 
 struct vec { float x, y, z; };
 struct block { int x, y, xs, ys; };
-struct mapmodelinfo { int rad, h, zoff, snap; char *name; };
+struct mapmodelinfo { int rad, h, zoff, snap; const char *name; };
 
 enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_RIFLE, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, NUMGUNS };
 

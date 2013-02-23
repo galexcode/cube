@@ -1,7 +1,5 @@
 // rendermd2.cpp: loader code adapted from a nehe tutorial
 
-#import <ObjFW/ObjFW.h>
-
 #include "cube.h"
 
 struct md2_header {
@@ -41,12 +39,16 @@ struct md2_frame {
 	int _displaylistverts;
 
 	mapmodelinfo _mmi;
-	char *_loadname;
+	OFString *_loadName;
 	int _mdlnum;
 	bool _loaded;
 }
 
-- (void)loadFile: (char*)filename;
+@property (copy, nonatomic) OFString *loadName;
+
++ (instancetype)modelForName: (OFString*)name;
+- (void)CB_loadFile: (OFString*)filename;
+- (void)delayedLoad;
 - (void)renderWithLight: (vec&)light
 		  frame: (int)frame
 		  range: (int)range
@@ -64,18 +66,55 @@ struct md2_frame {
 		    sn: (int)sn;
 @end
 
-@implementation MD2
-- (void)loadFile: (char*)filename
+static OFMutableDictionary *mdllookup = nil;
+static OFMutableArray *mapmodels = nil;
+static const int FIRSTMDL = 20;
+
+int modelnum = 0;
+
+static float
+snap(int sn, float f)
 {
-	OFAutoreleasePool *pool = [OFAutoreleasePool new];
-	OFString *path;
-	OFFile *file;
+	return (sn ? (float)(((int)(f + sn * 0.5f)) & (~(sn - 1))) : f);
+}
+
+@implementation MD2
+@synthesize loadName = _loadName;
+
++ (instancetype)modelForName: (OFString*)name
+{
+	if (mdllookup == nil)
+		mdllookup = [OFMutableDictionary new];
+
+	MD2 *model;
+	if ((model = [mdllookup objectForKey: name]) != nil)
+		return [[model retain] autorelease];
+
+	model = [[MD2 new] autorelease];
+	model->_mdlnum = modelnum++;
+	mapmodelinfo mmi = { 2, 2, 0, 0, "" };
+	model->_mmi = mmi;
+	model.loadName = name;
+
+	[mdllookup setObject: model
+		      forKey: name];
+
+	return model;
+}
+
+- (void)dealloc
+{
+	[_loadName release];
+
+	[super dealloc];
+}
+
+- (void)CB_loadFile: (OFString*)filename
+{
+	OFFile *file = [OFFile fileWithPath: filename
+				       mode: @"rb"];
+
 	md2_header header;
-
-	path = [OFString stringWithUTF8String: filename];
-	file = [OFFile fileWithPath: path
-			       mode: @"rb"];
-
 	[file readIntoBuffer: &header
 		 exactLength: sizeof(md2_header)];
 	endianswap(&header, sizeof(int), sizeof(md2_header) / sizeof(int));
@@ -115,13 +154,29 @@ struct md2_frame {
 	_mverts = new vec*[_numFrames];
 	loopj(_numFrames) _mverts[j] = NULL;
 
-	[pool release];
+	[file close];
 }
 
-float
-snap(int sn, float f)
+- (void)delayedLoad
 {
-	return (sn ? (float)(((int)(f + sn * 0.5f)) & (~(sn - 1))) : f);
+	if (!_loaded) {
+		OFString *name1 = [OFString stringWithPath:
+		    @"packages", @"models", _loadName, @"tris.md2", nil];
+
+		@try {
+			[self CB_loadFile: name1];
+		} @catch (id e) {
+			[Cube fatalError:
+			    [@"loadmodel: " stringByAppendingString: name1]];
+		}
+
+		OFString *name2 = [OFString stringWithPath:
+		    @"packages", @"models", _loadName, @"skin.jpg", nil];
+		int xs, ys;
+
+		installtex(FIRSTMDL + _mdlnum, [name2 UTF8String], xs, ys);
+		_loaded = true;
+	}
 }
 
 - (void)scaleWithFrame: (int)frame
@@ -222,66 +277,20 @@ snap(int sn, float f)
 }
 @end
 
-OFMutableDictionary *mdllookup = nil;
-OFMutableArray *mapmodels = nil;
-const int FIRSTMDL = 20;
-
-void delayedload(MD2 *m)
-{
-	if (!m->_loaded) {
-		sprintf_sd(name1)("packages/models/%s/tris.md2", m->_loadname);
-		@try {
-			[m loadFile: path(name1)];
-		} @catch (id e) {
-			fatal("loadmodel: ", name1);
-		}
-		sprintf_sd(name2)("packages/models/%s/skin.jpg", m->_loadname);
-		int xs, ys;
-		installtex(FIRSTMDL + m->_mdlnum, path(name2), xs, ys);
-		m->_loaded = true;
-	}
-}
-
-int modelnum = 0;
-
-MD2*
-loadmodel(char *name_)
+void
+mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 {
 	OFAutoreleasePool *pool = [OFAutoreleasePool new];
-	OFString *name = [OFString stringWithUTF8String: name_];
+	MD2 *model = [MD2 modelForName: [OFString stringWithUTF8String: name]];
 
-	if (mdllookup == nil)
-		mdllookup = [OFMutableDictionary new];
+	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
+		[model.loadName UTF8String] };
+	model->_mmi = mmi;
 
-	MD2 *m = [mdllookup objectForKey: name];
-	if (m != nil) {
-		[pool release];
-		return m;
-	}
-
-	m = [[MD2 new] autorelease];
-	m->_mdlnum = modelnum++;
-	mapmodelinfo mmi = { 2, 2, 0, 0, "" };
-	m->_mmi = mmi;
-	m->_loadname = newstring(name_);
-
-	[mdllookup setObject: m
-		      forKey: name];
+	[mapmodels addObject: model];
 
 	[pool release];
-
-	return m;
 }
-
-void
-mapmodel(char *rad, char *h, char *zoff, char *snap, char *name)
-{
-	MD2 *m = loadmodel(name);
-	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
-		m->_loadname };
-	m->_mmi = mmi;
-	[mapmodels addObject: m];
-};
 
 void
 mapmodelreset()
@@ -304,16 +313,17 @@ COMMAND(mapmodel, ARG_5STR);
 COMMAND(mapmodelreset, ARG_NONE);
 
 void
-rendermodel(char *mdl, int frame, int range, int tex, float rad, float x,
+rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
     float y, float z, float yaw, float pitch, bool teammate, float scale,
     float speed, int snap, int basetime)
 {
-	MD2 *m = loadmodel(mdl);
+	OFAutoreleasePool *pool = [OFAutoreleasePool new];
+	MD2 *m = [MD2 modelForName: [OFString stringWithUTF8String: mdl]];
 
 	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2))
 		return;
 
-	delayedload(m);
+	[m delayedLoad];
 
 	int xs, ys;
 	glBindTexture(GL_TEXTURE_2D,
@@ -350,4 +360,6 @@ rendermodel(char *mdl, int frame, int range, int tex, float rad, float x,
 		     speed: speed
 		      snap: snap
 		  basetime: basetime];
+
+	[pool release];
 }
