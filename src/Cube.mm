@@ -103,16 +103,16 @@ int framesinmap = 0;
 
 - (void)applicationDidFinishLaunching
 {
-	OFAutoreleasePool *pool = [OFAutoreleasePool new];
+	void *pool = objc_autoreleasePoolPush();
 	OFArray *arguments = [OFApplication arguments];
 
-    bool dedicated = false;
-    int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
-    char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
-    islittleendian = *((char *)&islittleendian);
+	bool dedicated = false;
+	int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
+	char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
+	islittleendian = *((char *)&islittleendian);
 
-    #define log(s) conoutf("init: %s", s)
-    log("sdl");
+#define log(s) conoutf("init: %s", s)
+	log("sdl");
 
 	for (OFString *arg in arguments) {
 		OFString *a = [arg substringWithRange:
@@ -143,7 +143,7 @@ int framesinmap = 0;
 		else conoutf("unknown commandline argument");
 	}
 
-	[pool release];
+	objc_autoreleasePoolPop(pool);
 
 #ifdef _DEBUG
 	par = SDL_INIT_NOPARACHUTE;

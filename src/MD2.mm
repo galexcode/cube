@@ -220,7 +220,7 @@ snap(int sn, float f)
 void
 mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 {
-	OFAutoreleasePool *pool = [OFAutoreleasePool new];
+	void *pool = objc_autoreleasePoolPush();
 	MD2 *model = [MD2 modelForName: [OFString stringWithUTF8String: name]];
 
 	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
@@ -229,7 +229,7 @@ mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 
 	[mapmodels addObject: model];
 
-	[pool release];
+	objc_autoreleasePoolPop(pool);
 }
 
 void
@@ -257,7 +257,7 @@ rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
     float y, float z, float yaw, float pitch, bool teammate, float scale,
     float speed, int snap, int basetime)
 {
-	OFAutoreleasePool *pool = [OFAutoreleasePool new];
+	void *pool = objc_autoreleasePoolPush();
 	MD2 *m = [MD2 modelForName: [OFString stringWithUTF8String: mdl]];
 
 	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2))
@@ -301,5 +301,5 @@ rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
 		      snap: snap
 		  basetime: basetime];
 
-	[pool release];
+	objc_autoreleasePoolPop(pool);
 }
