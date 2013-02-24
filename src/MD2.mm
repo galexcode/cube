@@ -7,8 +7,7 @@
 static OFMutableDictionary *mdllookup = nil;
 static OFMutableArray *mapmodels = nil;
 static const int FIRSTMDL = 20;
-
-int modelnum = 0;
+static int modelnum = 0;
 
 static float
 snap(int sn, float f)
@@ -23,21 +22,26 @@ snap(int sn, float f)
 
 + (instancetype)modelForName: (OFString*)name
 {
+	MD2 *model;
+
 	if (mdllookup == nil)
 		mdllookup = [OFMutableDictionary new];
 
-	MD2 *model;
-	if ((model = [mdllookup objectForKey: name]) != nil)
+	if ((model = mdllookup[name]) != nil)
 		return [[model retain] autorelease];
 
-	model = [[MD2 new] autorelease];
-	model.mdlnum = modelnum++;
-	mapmodelinfo mmi = { 2, 2, 0, 0, "" };
-	model.mmi = mmi;
-	model.loadName = name;
+	model = [MD2 new];
+	@try {
+		mapmodelinfo mmi = { 2, 2, 0, 0, "" };
 
-	[mdllookup setObject: model
-		      forKey: name];
+		model.mdlnum = modelnum++;
+		model.mmi = mmi;
+		model.loadName = name;
+
+		mdllookup[name] = model;
+	} @finally {
+		[model release];
+	}
 
 	return model;
 }
@@ -49,7 +53,7 @@ snap(int sn, float f)
 	[super dealloc];
 }
 
-- (void)CB_loadFile: (OFString*)filename
+- (void)_loadFile: (OFString*)filename
 {
 	OFFile *file = [OFFile fileWithPath: filename
 				       mode: @"rb"];
@@ -90,8 +94,8 @@ snap(int sn, float f)
 	_numTriangles  = header.numTriangles;
 	_numVerts      = header.numVertices;
 
-	// TODO: allocMemoryWithSize:?
-	_mverts = new vec*[_numFrames];
+	_mverts = (vec**)[self allocMemoryWithSize: sizeof(vec*)
+					     count: _numFrames];
 	loopj(_numFrames) _mverts[j] = NULL;
 
 	[file close];
@@ -99,40 +103,48 @@ snap(int sn, float f)
 
 - (void)delayedLoad
 {
-	if (!_loaded) {
-		OFString *name1 = [OFString stringWithPath:
-		    @"packages", @"models", _loadName, @"tris.md2", nil];
+	void *pool;
+	OFString *name1, *name2;
+	int xs, ys;
 
-		@try {
-			[self CB_loadFile: name1];
-		} @catch (id e) {
-			[Cube fatalError:
-			    [@"loadmodel: " stringByAppendingString: name1]];
-		}
+	if (_loaded)
+		return;
 
-		OFString *name2 = [OFString stringWithPath:
-		    @"packages", @"models", _loadName, @"skin.jpg", nil];
-		int xs, ys;
+	pool = objc_autoreleasePoolPush();
+	name1 = [OFString stringWithPath: @"packages", @"models", _loadName,
+					  @"tris.md2", nil];
 
-		installtex(FIRSTMDL + _mdlnum, [name2 UTF8String], xs, ys);
-		_loaded = true;
+	@try {
+		[self _loadFile: name1];
+	} @catch (id e) {
+		[Cube fatalError:
+		    [@"loadmodel: " stringByAppendingString: name1]];
 	}
+
+	name2 = [OFString stringWithPath: @"packages", @"models", _loadName,
+					  @"skin.jpg", nil];
+
+	installtex(FIRSTMDL + _mdlnum, [name2 UTF8String], xs, ys);
+	_loaded = true;
+
+	objc_autoreleasePoolPop(pool);
 }
 
 - (void)scaleWithFrame: (int)frame
 		 scale: (float)scale
 		    sn: (int)sn
 {
-	_mverts[frame] = new vec[_numVerts];
+	_mverts[frame] = (vec*)[self allocMemoryWithSize: sizeof(vec)
+						   count: _numVerts];
 	md2_frame *cf = (md2_frame *) ((char*)_frames + _frameSize * frame);
 	float sc = 16.0f / scale;
 
 	loop(vi, _numVerts) {
 		uchar *cv = (uchar *)&cf->vertices[vi].vertex;
 		vec *v = &(_mverts[frame])[vi];
-		v->x =  (snap(sn, cv[0] * cf->scale[0])+cf->translate[0]) / sc;
-		v->y = -(snap(sn, cv[1] * cf->scale[1])+cf->translate[1]) / sc;
-		v->z =  (snap(sn, cv[2] * cf->scale[2])+cf->translate[2]) / sc;
+		v->x =  (snap(sn, cv[0]*cf->scale[0]) + cf->translate[0]) / sc;
+		v->y = -(snap(sn, cv[1]*cf->scale[1]) + cf->translate[1]) / sc;
+		v->z =  (snap(sn, cv[2]*cf->scale[2]) + cf->translate[2]) / sc;
 	}
 }
 
@@ -221,10 +233,10 @@ void
 mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 {
 	void *pool = objc_autoreleasePoolPush();
-	MD2 *model = [MD2 modelForName: [OFString stringWithUTF8String: name]];
+	MD2 *model = [MD2 modelForName: @(name)];
 
 	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
-		[model.loadName UTF8String] };
+	    [model.loadName UTF8String] };
 	model.mmi = mmi;
 
 	[mapmodels addObject: model];
@@ -241,10 +253,8 @@ mapmodelreset()
 mapmodelinfo&
 getmminfo(int i)
 {
-	if (i < mapmodels.count) {
-		MD2 *m = [mapmodels objectAtIndex: i];
-		return m.mmi;
-	}
+	if (i < mapmodels.count)
+		return [mapmodels[i] mmi];
 
 	return *(mapmodelinfo*)0;
 }
@@ -253,17 +263,14 @@ COMMAND(mapmodel, ARG_5STR);
 COMMAND(mapmodelreset, ARG_NONE);
 
 void
-rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
+rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x,
     float y, float z, float yaw, float pitch, bool teammate, float scale,
     float speed, int snap, int basetime)
 {
-	void *pool = objc_autoreleasePoolPush();
-	MD2 *m = [MD2 modelForName: [OFString stringWithUTF8String: mdl]];
+	MD2 *m = [MD2 modelForName: mdl];
 
-	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2)) {
-		objc_autoreleasePoolPop(pool);
+	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2))
 		return;
-	}
 
 	[m delayedLoad];
 
@@ -302,6 +309,4 @@ rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
 		     speed: speed
 		      snap: snap
 		  basetime: basetime];
-
-	objc_autoreleasePoolPop(pool);
 }

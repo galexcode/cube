@@ -33,7 +33,7 @@ static OFMutableDictionary *idents = nil;
 void alias(char *name, char *action)
 {
 	void *pool = objc_autoreleasePoolPush();
-	Ident *b = [idents objectForKey: @(name)];
+	Ident *b = idents[@(name)];
 
 	if (b == nil) {
 		b = [[Ident new] autorelease];
@@ -42,8 +42,7 @@ void alias(char *name, char *action)
 		b->_action = newstring(action);
 		b->_persist = true;
 
-		[idents setObject: b
-			   forKey: @(name)];
+		idents[@(name)] = b;
 	} else {
 		if (b->_type == ID_ALIAS)
 			b->_action = exchangestr(b->_action, action);
@@ -77,8 +76,7 @@ variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
 	v->_fun = fun;
 	v->_persist = true;
 
-	[idents setObject: v
-		   forKey: @(name)];
+	idents[@(name)] = v;
 
 	objc_autoreleasePoolPop(pool);
 
@@ -90,7 +88,7 @@ setvar(char *name, int i)
 {
 	void *pool = objc_autoreleasePoolPush();
 
-	*[[idents objectForKey: @(name)] storage] = i;
+	*[idents[@(name)] storage] = i;
 
 	objc_autoreleasePoolPop(pool);
 }
@@ -101,7 +99,7 @@ getvar(char *name)
 	void *pool = objc_autoreleasePoolPush();
 	int v;
 
-	v = *[[idents objectForKey: @(name)] storage];
+	v = *[idents[@(name)] storage];
 
 	objc_autoreleasePoolPop(pool);
 
@@ -114,7 +112,7 @@ identexists(char *name)
 	void *pool = objc_autoreleasePoolPush();
 	bool e;
 
-	e = ([[idents objectForKey: @(name)] storage] != nil);
+	e = ([idents[@(name)] storage] != nil);
 
 	objc_autoreleasePoolPop(pool);
 
@@ -128,7 +126,7 @@ getalias(char *name)
 	char *ret = NULL;
 	Ident *i;
 
-	if ((i = [idents objectForKey: @(name)]) != nil && i->_type == ID_ALIAS)
+	if ((i = idents[@(name)]) != nil && i->_type == ID_ALIAS)
 		ret = i->_action;
 
 	objc_autoreleasePoolPop(pool);
@@ -150,8 +148,7 @@ addcommand(char *name, void (*fun)(), int narg)
 	c->_fun = fun;
 	c->_narg = narg;
 
-	[idents setObject: c
-		   forKey: @(name)];
+	idents[@(name)] = c;
 
 	objc_autoreleasePoolPop(pool);
 
@@ -208,7 +205,7 @@ char
 	void *pool = objc_autoreleasePoolPush();
 	Ident *i;
 
-	if ((i = [idents objectForKey: @(n + 1)]) != nil) {
+	if ((i = idents[@(n + 1)]) != nil) {
 		objc_autoreleasePoolPop(pool);
 
 		switch (i->_type) {
@@ -254,7 +251,7 @@ int execute(char *p, bool isdown)               // all evaluation happens here, 
 
 	void *pool = objc_autoreleasePoolPush();
 	Ident *i;
-	if ((i = [idents objectForKey: @(c)]) == nil) {
+	if ((i = idents[@(c)]) == nil) {
 		val = ATOI(c);
 		if (!val && *c != '0')
 			conoutf("unknown command: %s", c);
@@ -399,22 +396,20 @@ void writecfg()
 	writeclientinfo(f);
 	fprintf(f, "\n");
 
-	for (OFString *key in idents) {
-		Ident *i = [idents objectForKey: key];
-
+	[idents enumerateKeysAndObjectsUsingBlock:
+	    ^ (OFString *name, Ident *i, BOOL *stop) {
 		if (i->_type == ID_VAR && i->_persist)
 			fprintf(f, "%s %d\n", i->_name, *i->_storage);
-	}
+	}];
 	fprintf(f, "\n");
 	writebinds(f);
 	fprintf(f, "\n");
 
-	for (OFString *key in idents) {
-		Ident *i = [idents objectForKey: key];
-
-		if (i->_type==ID_ALIAS && !strstr(i->_name, "nextmap_"))
+	[idents enumerateKeysAndObjectsUsingBlock:
+	    ^ (OFString *name, Ident *i, BOOL *stop) {
+		if (i->_type == ID_ALIAS && ![name hasPrefix: @"nextmap_"])
 			fprintf(f, "alias \"%s\" [%s]\n", i->_name, i->_action);
-	}
+	}];
 
 	fclose(f);
 }

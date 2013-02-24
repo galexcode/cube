@@ -4,70 +4,101 @@
 
 vector<entity> ents;
 
-char *entmdlnames[] =
-{
-	"shells", "bullets", "rockets", "rrounds", "health", "boost",
-	"g_armour", "y_armour", "quad",	"teleporter",
+static OFString *const entmdlnames[] = {
+	@"shells", @"bullets", @"rockets", @"rrounds", @"health", @"boost",
+	@"g_armour", @"y_armour", @"quad", @"teleporter"
 };
+static int triggertime = 0;
 
-int triggertime = 0;
-
-void renderent(entity &e, char *mdlname, float z, float yaw, int frame = 0, int numf = 1, int basetime = 0, float speed = 10.0f)
+void
+renderent(entity &e, OFString *mdlname, float z, float yaw, int frame = 0,
+    int numf = 1, int basetime = 0, float speed = 10.0f)
 {
-	rendermodel(mdlname, frame, numf, 0, 1.1f, e.x, z+S(e.x, e.y)->floor, e.y, yaw, 0, false, 1.0f, speed, 0, basetime);
-};
+	rendermodel(mdlname, frame, numf, 0, 1.1f, e.x, z + S(e.x, e.y)->floor,
+	    e.y, yaw, 0, false, 1.0f, speed, 0, basetime);
+}
 
-void renderentities()
+void
+renderentities()
 {
-	if(lastmillis>triggertime+1000) triggertime = 0;
-    loopv(ents)
-    {
-        entity &e = ents[i];
-        if(e.type==MAPMODEL)
-        {
-            mapmodelinfo &mmi = getmminfo(e.attr2);
-            if(!&mmi) continue;
-			rendermodel(mmi.name, 0, 1, e.attr4, (float)mmi.rad, e.x, (float)S(e.x, e.y)->floor+mmi.zoff+e.attr3, e.y, (float)((e.attr1+7)-(e.attr1+7)%15), 0, false, 1.0f, 10.0f, mmi.snap);
-        }
-        else
-        {
-            if(OUTBORD(e.x, e.y)) continue;
-            if(e.type!=CARROT)
-            {
-				if(!e.spawned && e.type!=TELEPORT) continue;
-				if(e.type<I_SHELLS || e.type>TELEPORT) continue;
-				renderent(e, entmdlnames[e.type-I_SHELLS], (float)(1+sin(lastmillis/100.0+e.x+e.y)/20), lastmillis/10.0f);
-            }
-			else switch(e.attr2)
-            {
+	if (lastmillis > triggertime + 1000)
+		triggertime = 0;
+
+	loopv(ents) {
+		entity &e = ents[i];
+
+		if (e.type == MAPMODEL) {
+			mapmodelinfo &mmi = getmminfo(e.attr2);
+			if (!&mmi)
+				continue;
+
+			void *pool = objc_autoreleasePoolPush();
+			rendermodel(@(mmi.name), 0, 1, e.attr4, (float)mmi.rad,
+			    e.x, (float)S(e.x, e.y)->floor + mmi.zoff + e.attr3,
+			    e.y, (float)((e.attr1 + 7) - (e.attr1 + 7) % 15), 0,
+			    false, 1.0f, 10.0f, mmi.snap);
+			objc_autoreleasePoolPop(pool);
+		} else {
+			if (OUTBORD(e.x, e.y))
+				continue;
+
+			if (e.type!=CARROT) {
+				if (!e.spawned && e.type != TELEPORT)
+					continue;
+				if (e.type < I_SHELLS || e.type > TELEPORT)
+					continue;
+
+				renderent(e, entmdlnames[e.type-I_SHELLS],
+				    (float)(1 + sin(lastmillis / 100.0 + e.x +
+				    e.y) / 20), lastmillis / 10.0f);
+			} else {
+				switch(e.attr2) {
 				case 1:
 				case 3:
 					continue;
 
-                case 2:
-                case 0:
-					if(!e.spawned) continue;
-					renderent(e, "carrot", (float)(1+sin(lastmillis/100.0+e.x+e.y)/20), lastmillis/(e.attr2 ? 1.0f : 10.0f));
+				case 2:
+				case 0:
+					if (!e.spawned)
+						continue;
+					renderent(e, @"carrot", (float)(1 +
+					    sin(lastmillis / 100.0 + e.x +
+					    e.y) / 20), lastmillis / (e.attr2
+					    ? 1.0f : 10.0f));
 					break;
 
-                case 4: renderent(e, "switch2", 3,      (float)e.attr3*90, (!e.spawned && !triggertime) ? 1  : 0, (e.spawned || !triggertime) ? 1 : 2,  triggertime, 1050.0f);  break;
-                case 5: renderent(e, "switch1", -0.15f, (float)e.attr3*90, (!e.spawned && !triggertime) ? 30 : 0, (e.spawned || !triggertime) ? 1 : 30, triggertime, 35.0f); break;
-            };
-        };
-    };
-};
+				case 4:
+					renderent(e, @"switch2", 3,
+					    (float)e.attr3 * 90, (!e.spawned &&
+					    !triggertime) ? 1 : 0, (e.spawned ||
+					    !triggertime) ? 1 : 2, triggertime,
+					    1050.0f);
+					break;
+				case 5:
+					renderent(e, @"switch1", -0.15f,
+					    (float)e.attr3 * 90, (!e.spawned &&
+					    !triggertime) ? 30 : 0,
+					    (e.spawned || !triggertime)
+					    ? 1 : 30, triggertime, 35.0f);
+					break;
+				}
+			}
+		}
+	}
+}
 
-struct itemstat { int add, max, sound; } itemstats[] =
-{
-     10,    50, S_ITEMAMMO,
-     20,   100, S_ITEMAMMO,
-      5,    25, S_ITEMAMMO,
-      5,    25, S_ITEMAMMO,
-     25,   100, S_ITEMHEALTH,
-     50,   200, S_ITEMHEALTH,
-    100,   100, S_ITEMARMOUR,
-    150,   150, S_ITEMARMOUR,
-  20000, 30000, S_ITEMPUP,
+struct itemstat {
+	int add, max, sound;
+} itemstats[] = {
+	{    10,    50, S_ITEMAMMO },
+	{    20,   100, S_ITEMAMMO },
+	{     5,    25, S_ITEMAMMO },
+	{     5,    25, S_ITEMAMMO },
+	{    25,   100, S_ITEMHEALTH },
+	{    50,   200, S_ITEMHEALTH },
+	{   100,   100, S_ITEMARMOUR },
+	{   150,   150, S_ITEMARMOUR },
+	{ 20000, 30000, S_ITEMPUP }
 };
 
 void baseammo(int gun) { player1->ammo[gun] = itemstats[gun-1].add*2; };
