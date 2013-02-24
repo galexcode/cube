@@ -33,14 +33,14 @@ struct md2_frame {
 	int _displaylist;
 	int _displaylistverts;
 
-	mapmodelinfo _mmi;
+	MapModelInfo *_mmi;
 	OFString *_loadName;
 	int _mdlnum;
 	bool _loaded;
 }
 
-@property mapmodelinfo &mmi;
-@property (copy) OFString *loadName;
+@property (retain, nonatomic) MapModelInfo *mmi;
+@property (copy, nonatomic) OFString *loadName;
 @property int mdlnum;
 
 + (instancetype)modelForName: (OFString*)name;

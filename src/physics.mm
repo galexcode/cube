@@ -46,8 +46,8 @@ void mmcollide(dynent *d, float &hi, float &lo)           // collide with a mapm
     {
         entity &e = ents[i];
         if(e.type!=MAPMODEL) continue;
-        mapmodelinfo &mmi = getmminfo(e.attr2);
-        if(!&mmi || !mmi.h) continue;
+        MapModelInfo *mmi = getmminfo(e.attr2);
+        if (mmi == nil || mmi.h) continue;
         const float r = mmi.rad+d->radius;
         if(fabs(e.x-d->o.x)<r && fabs(e.y-d->o.y)<r)
         {

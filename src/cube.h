@@ -103,7 +103,16 @@ struct header                   // map file format header
 
 struct vec { float x, y, z; };
 struct block { int x, y, xs, ys; };
-struct mapmodelinfo { int rad, h, zoff, snap; const char *name; };
+
+@interface MapModelInfo: OFObject
+{
+	int _rad, _h, _zoff, _snap;
+	OFString *_name;
+}
+
+@property int rad, h, zoff, snap;
+@property (copy, nonatomic) OFString *name;
+@end
 
 enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_RIFLE, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, NUMGUNS };
 

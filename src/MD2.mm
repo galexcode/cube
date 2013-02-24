@@ -32,11 +32,20 @@ snap(int sn, float f)
 
 	model = [MD2 new];
 	@try {
-		mapmodelinfo mmi = { 2, 2, 0, 0, "" };
+		MapModelInfo *mmi;
 
 		model.mdlnum = modelnum++;
-		model.mmi = mmi;
 		model.loadName = name;
+
+		mmi = [MapModelInfo new];
+		@try {
+			mmi.rad = mmi.h = 2;
+			mmi.zoff = mmi.snap = 0;
+			mmi.name = @"";
+			model.mmi = mmi;
+		} @finally {
+			[mmi release];
+		}
 
 		mdllookup[name] = model;
 	} @finally {
@@ -46,8 +55,23 @@ snap(int sn, float f)
 	return model;
 }
 
+- init
+{
+	self = [super init];
+
+	@try {
+		_mmi = [MapModelInfo new];
+	} @catch (id e) {
+		[self release];
+		@throw e;
+	}
+
+	return self;
+}
+
 - (void)dealloc
 {
+	[_mmi release];
 	[_loadName release];
 
 	[super dealloc];
@@ -210,7 +234,7 @@ snap(int sn, float f)
 				int vn = *command++;
 				vec &v1 = verts1[vn];
 				vec &v2 = verts2[vn];
-				#define ip(c) v1.c*frac2+v2.c*frac1
+				#define ip(c) (v1.c * frac2 + v2.c * frac1)
 				glVertex3f(ip(x), ip(z), ip(y));
 			}
 
@@ -229,14 +253,33 @@ snap(int sn, float f)
 }
 @end
 
+@implementation MapModelInfo
+@synthesize rad = _rad;
+@synthesize h = _h;
+@synthesize zoff = _zoff;
+@synthesize snap = _snap;
+@synthesize name = _name;
+
+- (void)dealloc
+{
+	[_name release];
+
+	[super dealloc];
+}
+@end
+
 void
 mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 {
 	void *pool = objc_autoreleasePoolPush();
 	MD2 *model = [MD2 modelForName: @(name)];
 
-	mapmodelinfo mmi = { atoi(rad), atoi(h), atoi(zoff), atoi(snap),
-	    [model.loadName UTF8String] };
+	MapModelInfo *mmi = [[MapModelInfo new] autorelease];
+	mmi.rad = atoi(rad);
+	mmi.h = atoi(h);
+	mmi.zoff = atoi(zoff);
+	mmi.snap = atoi(snap);
+	mmi.name = model.loadName;
 	model.mmi = mmi;
 
 	[mapmodels addObject: model];
@@ -250,13 +293,13 @@ mapmodelreset()
 	[mapmodels removeAllObjects];
 }
 
-mapmodelinfo&
+MapModelInfo*
 getmminfo(int i)
 {
 	if (i < mapmodels.count)
 		return [mapmodels[i] mmi];
 
-	return *(mapmodelinfo*)0;
+	return (MapModelInfo*)0;
 }
 
 COMMAND(mapmodel, ARG_5STR);
