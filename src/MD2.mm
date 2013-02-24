@@ -260,8 +260,10 @@ rendermodel(const char *mdl, int frame, int range, int tex, float rad, float x,
 	void *pool = objc_autoreleasePoolPush();
 	MD2 *m = [MD2 modelForName: [OFString stringWithUTF8String: mdl]];
 
-	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2))
+	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2)) {
+		objc_autoreleasePoolPop(pool);
 		return;
+	}
 
 	[m delayedLoad];
 
