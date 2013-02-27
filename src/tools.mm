@@ -108,30 +108,36 @@ char *path(char *s)
 
 char *loadfile(char *fn, int *size)
 {
-	OFAutoreleasePool *pool = [OFAutoreleasePool new];
-	@try {
-		OFString *path = [OFString stringWithUTF8String: fn];
-		OFFile *f = [OFFile fileWithPath: path
-					    mode: @"rb"];
-		size_t len = [OFFile sizeOfFileAtPath: path];
-		char *buf;
+	char *buf = NULL;
+	size_t len;
 
-		if ((buf = (char*)malloc(len + 1)) == NULL)
+	@autoreleasepool {
+		@try {
+			OFString *path = @(fn);
+			OFFile *f = [OFFile fileWithPath: path
+						    mode: @"rb"];
+
+			len = [OFFile sizeOfFileAtPath: path];
+
+			if ((buf = (char*)malloc(len + 1)) == NULL)
+				return NULL;
+
+			[f readIntoBuffer: buf
+			      exactLength: len];
+
+			buf[len] = 0;
+		} @catch (id e) {
+			if (buf != NULL)
+				free(buf);
+
 			return NULL;
-
-		[f readIntoBuffer: buf
-		      exactLength: len];
-		buf[len] = 0;
-
-		if (size != NULL)
-			*size = (int)len;
-
-		return buf;
-	} @catch (id e) {
-		return NULL;
-	} @finally {
-		[pool release];
+		}
 	}
+
+	if (size != NULL)
+		*size = (int)len;
+
+	return buf;
 }
 
 void endianswap(void *memory, int stride, int length)   // little indians as storage format

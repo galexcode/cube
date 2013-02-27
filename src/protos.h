@@ -20,7 +20,7 @@ extern void keypress(int code, bool isdown, int cooked);
 extern void renderconsole();
 extern void conoutf(const char *s, ...);
 extern char *getcurcommand();
-extern void writebinds(FILE *f);
+extern void writebinds(OFFile *f);
 
 // menus
 extern bool rendermenu();
@@ -72,7 +72,7 @@ extern void initclientnet();
 extern bool netmapstart();
 extern int getclientnum();
 extern void changemapserv(char *name, int mode);
-extern void writeclientinfo(FILE *f);
+extern void writeclientinfo(OFFile *f);
 
 // clientgame
 extern void mousemove(int dx, int dy);

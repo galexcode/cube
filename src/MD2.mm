@@ -28,29 +28,19 @@ snap(int sn, float f)
 		mdllookup = [OFMutableDictionary new];
 
 	if ((model = mdllookup[name]) != nil)
-		return [[model retain] autorelease];
+		return model;
 
 	model = [MD2 new];
-	@try {
-		MapModelInfo *mmi;
+	model.mdlnum = modelnum++;
+	model.loadName = name;
 
-		model.mdlnum = modelnum++;
-		model.loadName = name;
+	MapModelInfo *mmi = [MapModelInfo new];
+	mmi.rad = mmi.h = 2;
+	mmi.zoff = mmi.snap = 0;
+	mmi.name = @"";
+	model.mmi = mmi;
 
-		mmi = [MapModelInfo new];
-		@try {
-			mmi.rad = mmi.h = 2;
-			mmi.zoff = mmi.snap = 0;
-			mmi.name = @"";
-			model.mmi = mmi;
-		} @finally {
-			[mmi release];
-		}
-
-		mdllookup[name] = model;
-	} @finally {
-		[model release];
-	}
+	mdllookup[name] = model;
 
 	return model;
 }
@@ -59,22 +49,9 @@ snap(int sn, float f)
 {
 	self = [super init];
 
-	@try {
-		_mmi = [MapModelInfo new];
-	} @catch (id e) {
-		[self release];
-		@throw e;
-	}
+	_mmi = [MapModelInfo new];
 
 	return self;
-}
-
-- (void)dealloc
-{
-	[_mmi release];
-	[_loadName release];
-
-	[super dealloc];
 }
 
 - (void)_loadFile: (OFString*)filename
@@ -127,14 +104,12 @@ snap(int sn, float f)
 
 - (void)delayedLoad
 {
-	void *pool;
 	OFString *name1, *name2;
 	int xs, ys;
 
 	if (_loaded)
 		return;
 
-	pool = objc_autoreleasePoolPush();
 	name1 = [OFString stringWithPath: @"packages", @"models", _loadName,
 					  @"tris.md2", nil];
 
@@ -150,8 +125,6 @@ snap(int sn, float f)
 
 	installtex(FIRSTMDL + _mdlnum, [name2 UTF8String], xs, ys);
 	_loaded = true;
-
-	objc_autoreleasePoolPop(pool);
 }
 
 - (void)scaleWithFrame: (int)frame
@@ -259,32 +232,24 @@ snap(int sn, float f)
 @synthesize zoff = _zoff;
 @synthesize snap = _snap;
 @synthesize name = _name;
-
-- (void)dealloc
-{
-	[_name release];
-
-	[super dealloc];
-}
 @end
 
 void
 mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
 {
-	void *pool = objc_autoreleasePoolPush();
-	MD2 *model = [MD2 modelForName: @(name)];
+	@autoreleasepool {
+		MD2 *model = [MD2 modelForName: @(name)];
 
-	MapModelInfo *mmi = [[MapModelInfo new] autorelease];
-	mmi.rad = atoi(rad);
-	mmi.h = atoi(h);
-	mmi.zoff = atoi(zoff);
-	mmi.snap = atoi(snap);
-	mmi.name = model.loadName;
-	model.mmi = mmi;
+		MapModelInfo *mmi = [MapModelInfo new];
+		mmi.rad = atoi(rad);
+		mmi.h = atoi(h);
+		mmi.zoff = atoi(zoff);
+		mmi.snap = atoi(snap);
+		mmi.name = model.loadName;
+		model.mmi = mmi;
 
-	[mapmodels addObject: model];
-
-	objc_autoreleasePoolPop(pool);
+		[mapmodels addObject: model];
+	}
 }
 
 void
@@ -310,46 +275,49 @@ rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x,
     float y, float z, float yaw, float pitch, bool teammate, float scale,
     float speed, int snap, int basetime)
 {
-	MD2 *m = [MD2 modelForName: mdl];
+	@autoreleasepool {
+		MD2 *m = [MD2 modelForName: mdl];
 
-	if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad, rad * 2))
-		return;
+		if (isoccluded(player1->o.x, player1->o.y, x-rad, z-rad,
+		    rad * 2))
+			return;
 
-	[m delayedLoad];
+		[m delayedLoad];
 
-	int xs, ys;
-	glBindTexture(GL_TEXTURE_2D,
-	    tex ? lookuptexture(tex, xs, ys) : FIRSTMDL + m.mdlnum);
+		int xs, ys;
+		glBindTexture(GL_TEXTURE_2D,
+		    tex ? lookuptexture(tex, xs, ys) : FIRSTMDL + m.mdlnum);
 
-	int ix = (int)x;
-	int iy = (int)z;
-	vec light = { 1.0f, 1.0f, 1.0f };
+		int ix = (int)x;
+		int iy = (int)z;
+		vec light = { 1.0f, 1.0f, 1.0f };
 
-	if (!OUTBORD(ix, iy)) {
-		sqr *s = S(ix, iy);
-		float ll = 256.0f; // 0.96f;
-		float of = 0.0f; // 0.1f;
-		light.x = s->r / ll + of;
-		light.y = s->g / ll + of;
-		light.z = s->b / ll + of;
+		if (!OUTBORD(ix, iy)) {
+			sqr *s = S(ix, iy);
+			float ll = 256.0f; // 0.96f;
+			float of = 0.0f; // 0.1f;
+			light.x = s->r / ll + of;
+			light.y = s->g / ll + of;
+			light.z = s->b / ll + of;
+		}
+
+		if (teammate) {
+			light.x *= 0.6f;
+			light.y *= 0.7f;
+			light.z *= 1.2f;
+		}
+
+		[m renderWithLight: light
+			     frame: frame
+			     range: range
+				 x: x
+				 y: y
+				 z: z
+			       yaw: yaw
+			     pitch: pitch
+			     scale: scale
+			     speed: speed
+			      snap: snap
+			  basetime: basetime];
 	}
-
-	if (teammate) {
-		light.x *= 0.6f;
-		light.y *= 0.7f;
-		light.z *= 1.2f;
-	}
-
-	[m renderWithLight: light
-		     frame: frame
-		     range: range
-			 x: x
-			 y: y
-			 z: z
-		       yaw: yaw
-		     pitch: pitch
-		     scale: scale
-		     speed: speed
-		      snap: snap
-		  basetime: basetime];
 }

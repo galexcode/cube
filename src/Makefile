@@ -51,11 +51,11 @@ clean:
 
 ../bin/client: enet
 	@mkdir -p ../bin
-	@objfw-compile --builddir ../build/client -o $@	\
+	@objfw-compile --builddir ../build/client --arc -o $@	\
 		${CLIENT_SRCS} ${OPT} ${CPPFLAGS} ${LIBS}
 
 ../bin/server: enet
 	@mkdir -p ../bin
-	@objfw-compile --builddir ../build/server -o $@   \
-		${SERVER_SRCS} ${OPT} ${CPPFLAGS} ${LIBS} \
+	@objfw-compile --builddir ../build/server --arc -o $@   \
+		${SERVER_SRCS} ${OPT} ${CPPFLAGS} ${LIBS}	\
 		-DSTANDALONE

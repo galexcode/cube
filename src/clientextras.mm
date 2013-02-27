@@ -9,37 +9,78 @@
 int frame[] = { 178, 184, 190, 137, 183, 189, 197, 164, 46, 51, 54, 32, 0,  0, 40, 1,  162, 162, 67, 168 };
 int range[] = { 6,   6,   8,   28,  1,   1,   1,   1,   8,  19, 4,  18, 40, 1, 6,  15, 1,   1,   1,  1   };
 
-void renderclient(dynent *d, bool team, char *mdlname, bool hellpig, float scale)
+void
+renderclient(dynent *d, bool team, char *mdlname, bool hellpig, float scale)
 {
-    int n = 3;
-    float speed = 100.0f;
-    float mz = d->o.z-d->eyeheight+1.55f*scale;
-    int basetime = -((uintptr_t)d&0xFFF);
-    if(d->state==CS_DEAD)
-    {
-        int r;
-        if(hellpig) { n = 2; r = range[3]; } else { n = (uintptr_t)d%3; r = range[n]; };
-        basetime = d->lastaction;
-        int t = lastmillis-d->lastaction;
-        if(t<0 || t>20000) return;
-        if(t>(r-1)*100) { n += 4; if(t>(r+10)*100) { t -= (r+10)*100; mz -= t*t/10000000000.0f*t; }; };
-        if(mz<-1000) return;
-        //mdl = (((int)d>>6)&1)+1;
-        //mz = d->o.z-d->eyeheight+0.2f;
-        //scale = 1.2f;
-    }
-    else if(d->state==CS_EDITING)                   { n = 16; }
-    else if(d->state==CS_LAGGED)                    { n = 17; }
-    else if(d->monsterstate==M_ATTACKING)           { n = 8;  }
-    else if(d->monsterstate==M_PAIN)                { n = 10; }
-    else if((!d->move && !d->strafe) || !d->moving) { n = 12; }
-    else if(!d->onfloor && d->timeinair>100)        { n = 18; }
-    else                                            { n = 14; speed = 1200/d->maxspeed*scale; if(hellpig) speed = 300/d->maxspeed;  };
-    if(hellpig) { n++; scale *= 32; mz -= 1.9f; };
-    void *pool = objc_autoreleasePoolPush();
-    rendermodel(@(mdlname), frame[n], range[n], 0, 1.5f, d->o.x, mz, d->o.y, d->yaw+90, d->pitch/2, team, scale, speed, 0, basetime);
-    objc_autoreleasePoolPop(pool);
-};
+	int n = 3;
+	float speed = 100.0f;
+	float mz = d->o.z - d->eyeheight + 1.55f * scale;
+	int basetime = -((uintptr_t)d & 0xFFF);
+
+	if (d->state == CS_DEAD) {
+		int r;
+
+		if (hellpig) {
+			n = 2;
+			r = range[3];
+		} else {
+			n = (uintptr_t)d % 3;
+			r = range[n];
+		}
+
+		basetime = d->lastaction;
+
+		int t = lastmillis-d->lastaction;
+		if (t < 0 || t > 20000)
+			return;
+
+		if (t > (r - 1) * 100) {
+			n += 4;
+
+			if (t > (r + 10) * 100) {
+				t -= (r + 10) * 100;
+				mz -= t * t / 10000000000.0f * t;
+			}
+		}
+
+		if(mz < -1000)
+			return;
+
+		//mdl = (((int)d >> 6) & 1) + 1;
+		//mz = d->o.z - d->eyeheight + 0.2f;
+		//scale = 1.2f;
+	} else if (d->state == CS_EDITING)
+		n = 16;
+	else if (d->state == CS_LAGGED)
+		n = 17;
+	else if (d->monsterstate == M_ATTACKING)
+		n = 8;
+	else if (d->monsterstate == M_PAIN)
+		n = 10;
+	else if ((!d->move && !d->strafe) || !d->moving)
+		n = 12;
+	else if (!d->onfloor && d->timeinair > 100)
+		n = 18;
+	else {
+		n = 14;
+		speed = 1200 / d->maxspeed * scale;
+
+		if (hellpig)
+			speed = 300 / d->maxspeed;
+	}
+
+	if (hellpig) {
+		n++;
+		scale *= 32;
+		mz -= 1.9f;
+	}
+
+	@autoreleasepool {
+		rendermodel(@(mdlname), frame[n], range[n], 0, 1.5f, d->o.x, mz,
+		    d->o.y, d->yaw + 90, d->pitch / 2, team, scale, speed, 0,
+		    basetime);
+	}
+}
 
 extern int democlientnum;
 

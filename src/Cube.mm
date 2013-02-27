@@ -14,34 +14,46 @@ alloc(int s)
 		[Cube fatalError: @"out of memory!"];
 
 	return b;
-};
+}
 
 int scr_w = 640;
 int scr_h = 480;
 
-void screenshot()
+void
+screenshot()
 {
-    SDL_Surface *image;
-    SDL_Surface *temp;
-    int idx;
-    if(image = SDL_CreateRGBSurface(SDL_SWSURFACE, scr_w, scr_h, 24, 0x0000FF, 0x00FF00, 0xFF0000, 0))
-    {
-        if(temp  = SDL_CreateRGBSurface(SDL_SWSURFACE, scr_w, scr_h, 24, 0x0000FF, 0x00FF00, 0xFF0000, 0))
-        {
-            glReadPixels(0, 0, scr_w, scr_h, GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
-            for (idx = 0; idx<scr_h; idx++)
-            {
-                char *dest = (char *)temp->pixels+3*scr_w*idx;
-                memcpy(dest, (char *)image->pixels+3*scr_w*(scr_h-1-idx), 3*scr_w);
-                endianswap(dest, 3, scr_w);
-            };
-            sprintf_sd(buf)("screenshots/screenshot_%d.bmp", lastmillis);
-            SDL_SaveBMP(temp, path(buf));
-            SDL_FreeSurface(temp);
-        };
-        SDL_FreeSurface(image);
-    };
-};
+	SDL_Surface *image;
+	SDL_Surface *temp;
+	int idx;
+
+	image = SDL_CreateRGBSurface(SDL_SWSURFACE, scr_w, scr_h, 24, 0x0000FF,
+	    0x00FF00, 0xFF0000, 0);
+	if (image == NULL)
+		return;
+
+	temp = SDL_CreateRGBSurface(SDL_SWSURFACE, scr_w, scr_h, 24, 0x0000FF,
+	    0x00FF00, 0xFF0000, 0);
+	if (temp == NULL) {
+		SDL_FreeSurface(image);
+		return;
+	}
+
+	glReadPixels(0, 0, scr_w, scr_h, GL_RGB, GL_UNSIGNED_BYTE,
+	    image->pixels);
+
+	for (idx = 0; idx<scr_h; idx++) {
+		char *dest = (char*)temp->pixels + 3 * scr_w * idx;
+		memcpy(dest, (char*)image->pixels + 3 * scr_w *
+		    (scr_h - 1 - idx), 3 * scr_w);
+		endianswap(dest, 3, scr_w);
+	}
+
+	sprintf_sd(buf)("screenshots/screenshot_%d.bmp", lastmillis);
+
+	SDL_SaveBMP(temp, path(buf));
+	SDL_FreeSurface(temp);
+	SDL_FreeSurface(image);
+}
 
 static void
 quit()
@@ -52,11 +64,12 @@ quit()
 COMMAND(screenshot, ARG_NONE);
 COMMAND(quit, ARG_NONE);
 
-void keyrepeat(bool on)
+void
+keyrepeat(bool on)
 {
-    SDL_EnableKeyRepeat(on ? SDL_DEFAULT_REPEAT_DELAY : 0,
-                             SDL_DEFAULT_REPEAT_INTERVAL);
-};
+	SDL_EnableKeyRepeat(on
+	    ? SDL_DEFAULT_REPEAT_DELAY : 0, SDL_DEFAULT_REPEAT_INTERVAL);
+}
 
 VARF(gamespeed, 10, 100, 1000, if(multiplayer()) gamespeed = 100);
 VARP(minmillis, 0, 5, 1000);
@@ -103,9 +116,6 @@ int framesinmap = 0;
 
 - (void)applicationDidFinishLaunching
 {
-	void *pool = objc_autoreleasePoolPush();
-	OFArray *arguments = [OFApplication arguments];
-
 	bool dedicated = false;
 	int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
 	char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
@@ -114,36 +124,38 @@ int framesinmap = 0;
 #define log(s) conoutf("init: %s", s)
 	log("sdl");
 
-	for (OFString *arg in arguments) {
-		OFString *a = [arg substringWithRange:
-		    of_range(2, arg.length - 2)];
+	@autoreleasepool {
+		OFArray *arguments = [OFApplication arguments];
 
-		if ([arg isEqual: @"-d"])
-			dedicated = true;
-		else if ([arg isEqual: @"-t"])
-			fs = 0;
-		else if ([arg hasPrefix: @"-w"])
-			scr_w = [a decimalValue];
-		else if ([arg hasPrefix: @"-h"])
-			scr_h = [a decimalValue];
-		else if ([arg hasPrefix: @"-u"])
-			uprate = [a decimalValue];
-		else if ([arg hasPrefix: @"-n"])
-			sdesc = strdup([a UTF8String]);
-		else if ([arg hasPrefix: @"-i"])
-			ip = strdup([a UTF8String]);
-		else if ([arg hasPrefix: @"-m"])
-			master = strdup([a UTF8String]);
-		else if ([arg hasPrefix: @"-p"])
-			passwd = strdup([a UTF8String]);
-		else if ([arg hasPrefix: @"-c"])
-			maxcl = [a decimalValue];
-		else if ([arg hasPrefix: @"-"])
-			conoutf("unknown commandline option");
-		else conoutf("unknown commandline argument");
+		for (OFString *arg in arguments) {
+			OFString *a = [arg substringWithRange:
+			    of_range(2, arg.length - 2)];
+
+			if ([arg isEqual: @"-d"])
+				dedicated = true;
+			else if ([arg isEqual: @"-t"])
+				fs = 0;
+			else if ([arg hasPrefix: @"-w"])
+				scr_w = [a decimalValue];
+			else if ([arg hasPrefix: @"-h"])
+				scr_h = [a decimalValue];
+			else if ([arg hasPrefix: @"-u"])
+				uprate = [a decimalValue];
+			else if ([arg hasPrefix: @"-n"])
+				sdesc = strdup([a UTF8String]);
+			else if ([arg hasPrefix: @"-i"])
+				ip = strdup([a UTF8String]);
+			else if ([arg hasPrefix: @"-m"])
+				master = strdup([a UTF8String]);
+			else if ([arg hasPrefix: @"-p"])
+				passwd = strdup([a UTF8String]);
+			else if ([arg hasPrefix: @"-c"])
+				maxcl = [a decimalValue];
+			else if ([arg hasPrefix: @"-"])
+				conoutf("unknown commandline option");
+			else conoutf("unknown commandline argument");
+		}
 	}
-
-	objc_autoreleasePoolPop(pool);
 
 #ifdef _DEBUG
 	par = SDL_INIT_NOPARACHUTE;
@@ -216,61 +228,87 @@ int framesinmap = 0;
 	// if this map is changed, also change depthcorrect()
 	changemap("metl3");
 
-    log("mainloop");
-    int ignore = 5;
-    for(;;)
-    {
-        int millis = SDL_GetTicks()*gamespeed/100;
-        if(millis-lastmillis>200) lastmillis = millis-200;
-        else if(millis-lastmillis<1) lastmillis = millis-1;
-        if(millis-lastmillis<minmillis) SDL_Delay(minmillis-(millis-lastmillis));
-        cleardlights();
-        updateworld(millis);
-        if(!demoplayback) serverslice((int)time(NULL), 0);
-        static float fps = 30.0f;
-        fps = (1000.0f/curtime+fps*50)/51;
-        computeraytable(player1->o.x, player1->o.y);
-        readdepth(scr_w, scr_h);
-        SDL_GL_SwapBuffers();
-        extern void updatevol(); updatevol();
-        if(framesinmap++<5)	// cheap hack to get rid of initial sparklies, even when triple buffering etc.
-        {
+	log("mainloop");
+	int ignore = 5;
+	for(;;) {
+		int millis = SDL_GetTicks() * gamespeed / 100;
+
+		if (millis - lastmillis > 200)
+			lastmillis = millis - 200;
+		else if (millis - lastmillis < 1)
+			lastmillis = millis - 1;
+
+		if (millis - lastmillis < minmillis)
+			SDL_Delay(minmillis - (millis - lastmillis));
+
+		cleardlights();
+		updateworld(millis);
+
+		if (!demoplayback)
+			serverslice((int)time(NULL), 0);
+
+		static float fps = 30.0f;
+		fps = (1000.0f/curtime+fps*50)/51;
+		computeraytable(player1->o.x, player1->o.y);
+		readdepth(scr_w, scr_h);
+		SDL_GL_SwapBuffers();
+
+		extern void updatevol();
+		updatevol();
+
+		// cheap hack to get rid of initial sparklies, even when triple
+		// buffering etc.
+		if (framesinmap++ < 5) {
 			player1->yaw += 5;
 			gl_drawframe(scr_w, scr_h, fps);
 			player1->yaw -= 5;
-        };
-        gl_drawframe(scr_w, scr_h, fps);
-        SDL_Event event;
-        int lasttype = 0, lastbut = 0;
-        while(SDL_PollEvent(&event))
-        {
-            switch(event.type)
-            {
-                case SDL_QUIT:
-                    [Cube quit];
-                    break;
+		}
 
-                case SDL_KEYDOWN:
-                case SDL_KEYUP:
-                    keypress(event.key.keysym.sym, event.key.state==SDL_PRESSED, event.key.keysym.unicode);
-                    break;
+		gl_drawframe(scr_w, scr_h, fps);
 
-                case SDL_MOUSEMOTION:
-                    if(ignore) { ignore--; break; };
-                    mousemove(event.motion.xrel, event.motion.yrel);
-                    break;
+		SDL_Event event;
+		int lasttype = 0, lastbut = 0;
+		while (SDL_PollEvent(&event)) {
+			switch(event.type) {
+			case SDL_QUIT:
+				[Cube quit];
+				break;
 
-                case SDL_MOUSEBUTTONDOWN:
-                case SDL_MOUSEBUTTONUP:
-                    if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
-                    keypress(-event.button.button, event.button.state!=0, 0);
-                    lasttype = event.type;
-                    lastbut = event.button.button;
-                    break;
-            };
-        };
-    };
-    [Cube quit];
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				keypress(event.key.keysym.sym,
+				    (event.key.state == SDL_PRESSED),
+				    event.key.keysym.unicode);
+				break;
+
+			case SDL_MOUSEMOTION:
+				if (ignore) {
+					ignore--;
+					break;
+				}
+
+				mousemove(event.motion.xrel, event.motion.yrel);
+
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				// why?? get event twice without it
+				if (lasttype == event.type &&
+				    lastbut == event.button.button)
+					break;
+
+				keypress(-event.button.button,
+				    (event.button.state != 0), 0);
+				lasttype = event.type;
+				lastbut = event.button.button;
+
+				break;
+			}
+		}
+	}
+
+	[Cube quit];
 }
 
 - (void)applicationWillTerminate

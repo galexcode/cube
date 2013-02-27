@@ -7,7 +7,6 @@ enum { ID_VAR, ID_COMMAND, ID_ALIAS };
 
 @interface Ident: OFObject
 {
-@public
 	int _type;           // one of ID_* above
 	char *_name;
 	int _min, _max;      // ID_VAR
@@ -15,43 +14,61 @@ enum { ID_VAR, ID_COMMAND, ID_ALIAS };
 	void (*_fun)();      // ID_VAR, ID_COMMAND
 	int _narg;           // ID_VAR, ID_COMMAND
 	char *_action;       // ID_ALIAS
-	bool _persist;
+	BOOL _persist;
 }
 
+@property int type;
+@property char *name;
+@property int min, max;
+@property void (*fun)();
 @property int *storage;
+@property int narg;
+@property char *action;
+@property BOOL persist;
 @end
 
 @implementation Ident
-@synthesize storage = _storage;
+@synthesize type = _type, name = _name, min = _min, max = _max, fun = _fun;
+@synthesize storage = _storage, narg = _narg, action = _action;
+@synthesize persist = _persist;
 @end
 
-void itoa(char *s, int i) { sprintf_s(s)("%d", i); };
-char *exchangestr(char *o, char *n) { gp()->deallocstr(o); return newstring(n); };
+void
+itoa(char *s, int i)
+{
+	sprintf_s(s)("%d", i);
+}
+
+char*
+exchangestr(char *o, char *n)
+{
+	gp()->deallocstr(o);
+	return newstring(n);
+}
 
 static OFMutableDictionary *idents = nil;
 
 void alias(char *name, char *action)
 {
-	void *pool = objc_autoreleasePoolPush();
-	Ident *b = idents[@(name)];
+	@autoreleasepool {
+		Ident *b = idents[@(name)];
 
-	if (b == nil) {
-		b = [[Ident new] autorelease];
-		b->_type = ID_ALIAS;
-		b->_name = newstring(name);
-		b->_action = newstring(action);
-		b->_persist = true;
+		if (b == nil) {
+			b = [Ident new];
+			b.type = ID_ALIAS;
+			b.name = newstring(name);
+			b.action = newstring(action);
+			b.persist = YES;
 
-		idents[@(name)] = b;
-	} else {
-		if (b->_type == ID_ALIAS)
-			b->_action = exchangestr(b->_action, action);
-		else
-			conoutf("cannot redefine builtin %s with an alias",
-			    name);
+			idents[@(name)] = b;
+		} else {
+			if (b.type == ID_ALIAS)
+				b.action = exchangestr(b.action, action);
+			else
+				conoutf("cannot redefine builtin %s with an "
+				    "alias", name);
+		}
 	}
-
-	objc_autoreleasePoolPop(pool);
 }
 
 COMMAND(alias, ARG_2STR);
@@ -62,23 +79,21 @@ int
 variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
     bool persist)
 {
-	void *pool = objc_autoreleasePoolPush();
+	@autoreleasepool {
+		if (idents == nil)
+			idents = [OFMutableDictionary new];
 
-	if (idents == nil)
-		idents = [OFMutableDictionary new];
+		Ident *v = [Ident new];
+		v.type = ID_VAR;
+		v.name = name;
+		v.min = min;
+		v.max = max;
+		v.storage = storage;
+		v.fun = fun;
+		v.persist = YES;
 
-	Ident *v = [[Ident new] autorelease];
-	v->_type = ID_VAR;
-	v->_name = name;
-	v->_min = min;
-	v->_max = max;
-	v->_storage = storage;
-	v->_fun = fun;
-	v->_persist = true;
-
-	idents[@(name)] = v;
-
-	objc_autoreleasePoolPop(pool);
+		idents[@(name)] = v;
+	}
 
 	return cur;
 }
@@ -86,71 +101,55 @@ variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
 void
 setvar(char *name, int i)
 {
-	void *pool = objc_autoreleasePoolPush();
-
-	*[idents[@(name)] storage] = i;
-
-	objc_autoreleasePoolPop(pool);
+	@autoreleasepool {
+		*[idents[@(name)] storage] = i;
+	}
 }
 
 int
 getvar(char *name)
 {
-	void *pool = objc_autoreleasePoolPush();
-	int v;
-
-	v = *[idents[@(name)] storage];
-
-	objc_autoreleasePoolPop(pool);
-
-	return v;
+	@autoreleasepool {
+		return *[idents[@(name)] storage];
+	}
 }
 
 bool
 identexists(char *name)
 {
-	void *pool = objc_autoreleasePoolPush();
-	bool e;
-
-	e = ([idents[@(name)] storage] != nil);
-
-	objc_autoreleasePoolPop(pool);
-
-	return e;
+	@autoreleasepool {
+		return ([idents[@(name)] storage] != nil);
+	}
 }
 
 char*
 getalias(char *name)
 {
-	void *pool = objc_autoreleasePoolPush();
-	char *ret = NULL;
-	Ident *i;
+	@autoreleasepool {
+		Ident *i = idents[@(name)];
 
-	if ((i = idents[@(name)]) != nil && i->_type == ID_ALIAS)
-		ret = i->_action;
+		if (i.type == ID_ALIAS)
+			return i.action;
+	}
 
-	objc_autoreleasePoolPop(pool);
-
-	return ret;
-};
+	return NULL;
+}
 
 bool
 addcommand(char *name, void (*fun)(), int narg)
 {
-	void *pool = objc_autoreleasePoolPush();
+	@autoreleasepool {
+		if (idents == nil)
+			idents = [OFMutableDictionary new];
 
-	if (idents == nil)
-		idents = [OFMutableDictionary new];
+		Ident *c = [Ident new];
+		c.type = ID_COMMAND;
+		c.name = name;
+		c.fun = fun;
+		c.narg = narg;
 
-	Ident *c = [[Ident new] autorelease];
-	c->_type = ID_COMMAND;
-	c->_name = name;
-	c->_fun = fun;
-	c->_narg = narg;
-
-	idents[@(name)] = c;
-
-	objc_autoreleasePoolPop(pool);
+		idents[@(name)] = c;
+	}
 
 	return false;
 }
@@ -202,136 +201,213 @@ char *parseword(char *&p)                       // parse single argument, includ
 char
 *lookup(char *n)
 {
-	void *pool = objc_autoreleasePoolPush();
-	Ident *i;
+	@autoreleasepool {
+		Ident *i = idents[@(n + 1)];
 
-	if ((i = idents[@(n + 1)]) != nil) {
-		objc_autoreleasePoolPop(pool);
-
-		switch (i->_type) {
-		case ID_VAR:
-			string t;
-			itoa(t, *(i->_storage));
-			return exchangestr(n, t);
-		case ID_ALIAS:
-			return exchangestr(n, i->_action);
+		if (i != nil) {
+			switch (i.type) {
+			case ID_VAR:
+				string t;
+				itoa(t, *(i.storage));
+				return exchangestr(n, t);
+			case ID_ALIAS:
+				return exchangestr(n, i.action);
+			}
 		}
 	}
 
 	conoutf("unknown alias lookup: %s", n+1);
 
-	objc_autoreleasePoolPop(pool);
-
 	return n;
 }
 
-int execute(char *p, bool isdown)               // all evaluation happens here, recursively
+// all evaluation happens here, recursively
+int execute(char *p, bool isdown)
 {
-    const int MAXWORDS = 25;                    // limit, remove
-    char *w[MAXWORDS];
-    int val = 0;
-    for(bool cont = true; cont;)                // for each ; seperated statement
-    {
-        int numargs = MAXWORDS;
-        loopi(MAXWORDS)                         // collect all argument values
-        {
-            w[i] = "";
-            if(i>numargs) continue;
-            char *s = parseword(p);             // parse and evaluate exps
-            if(!s) { numargs = i; s = ""; };
-            if(*s=='$') s = lookup(s);          // substitute variables
-            w[i] = s;
-        };
+	const int MAXWORDS = 25;	// limit, remove
+	char *w[MAXWORDS];
+	int val = 0;
 
-        p += strcspn(p, ";\n\0");
-        cont = *p++!=0;                         // more statements if this isn't the end of the string
-        char *c = w[0];
-        if(*c=='/') c++;                        // strip irc-style command prefix
-        if(!*c) continue;                       // empty statement
+	for (bool cont = true; cont;) {
+		int numargs = MAXWORDS;
 
-	void *pool = objc_autoreleasePoolPush();
-	Ident *i;
-	if ((i = idents[@(c)]) == nil) {
-		val = ATOI(c);
-		if (!val && *c != '0')
-			conoutf("unknown command: %s", c);
-        } else
-		switch(i->_type) {
-            case ID_COMMAND:                    // game defined commands
-                switch(i->_narg)                // use very ad-hoc function signature, and just call it
-                {
-                    case ARG_1INT: if(isdown) ((void (__cdecl *)(int))i->_fun)(ATOI(w[1])); break;
-                    case ARG_2INT: if(isdown) ((void (__cdecl *)(int, int))i->_fun)(ATOI(w[1]), ATOI(w[2])); break;
-                    case ARG_3INT: if(isdown) ((void (__cdecl *)(int, int, int))i->_fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3])); break;
-                    case ARG_4INT: if(isdown) ((void (__cdecl *)(int, int, int, int))i->_fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3]), ATOI(w[4])); break;
-                    case ARG_NONE: if(isdown) ((void (__cdecl *)())i->_fun)(); break;
-                    case ARG_1STR: if(isdown) ((void (__cdecl *)(char *))i->_fun)(w[1]); break;
-                    case ARG_2STR: if(isdown) ((void (__cdecl *)(char *, char *))i->_fun)(w[1], w[2]); break;
-                    case ARG_3STR: if(isdown) ((void (__cdecl *)(char *, char *, char*))i->_fun)(w[1], w[2], w[3]); break;
-                    case ARG_5STR: if(isdown) ((void (__cdecl *)(char *, char *, char*, char*, char*))i->_fun)(w[1], w[2], w[3], w[4], w[5]); break;
-                    case ARG_DOWN: ((void (__cdecl *)(bool))i->_fun)(isdown); break;
-                    case ARG_DWN1: ((void (__cdecl *)(bool, char *))i->_fun)(isdown, w[1]); break;
-                    case ARG_1EXP: if(isdown) val = ((int (__cdecl *)(int))i->_fun)(execute(w[1])); break;
-                    case ARG_2EXP: if(isdown) val = ((int (__cdecl *)(int, int))i->_fun)(execute(w[1]), execute(w[2])); break;
-                    case ARG_1EST: if(isdown) val = ((int (__cdecl *)(char *))i->_fun)(w[1]); break;
-                    case ARG_2EST: if(isdown) val = ((int (__cdecl *)(char *, char *))i->_fun)(w[1], w[2]); break;
-                    case ARG_VARI: if(isdown)
-                    {
-                        string r;               // limit, remove
-                        r[0] = 0;
-                        for(int i = 1; i<numargs; i++)
-                        {
-                            strcat_s(r, w[i]);  // make string-list out of all arguments
-                            if(i==numargs-1) break;
-                            strcat_s(r, " ");
-                        };
-                        ((void (__cdecl *)(char *))i->_fun)(r);
-                        break;
-                    }
-                };
-                break;
+		// collect all argument values
+		loopi(MAXWORDS) {
+			w[i] = "";
 
-            case ID_VAR:                        // game defined variabled
-                if(isdown)
-                {
-                    if(!w[1][0]) conoutf("%s = %d", c, *i->_storage);      // var with no value just prints its current value
-                    else
-                    {
-                        if(i->_min>i->_max)
-                        {
-                            conoutf("variable is read-only");
-                        }
-                        else
-                        {
-                            int i1 = ATOI(w[1]);
-                            if(i1 < i->_min || i1> i->_max)
-                            {
-                                i1 = i1<i->_min ? i->_min : i->_max;                // clamp to valid range
-                                conoutf("valid range for %s is %d..%d", c, i->_min, i->_max);
-                            }
-                            *i->_storage = i1;
-                        };
-                        if(i->_fun) ((void (__cdecl *)())i->_fun)();            // call trigger function if available
-                    };
-                };
-                break;
+			if (i > numargs)
+				continue;
 
-            case ID_ALIAS:                              // alias, also used as functions and (global) variables
-                for(int i = 1; i<numargs; i++)
-                {
-                    sprintf_sd(t)("arg%d", i);          // set any arguments as (global) arg values so functions can access them
-                    alias(t, w[i]);
-                };
-                char *action = newstring(i->_action);   // create new string here because alias could rebind itself
-                val = execute(action, isdown);
-                gp()->deallocstr(action);
-                break;
-        };
-	objc_autoreleasePoolPop(pool);
-        loopj(numargs) gp()->deallocstr(w[j]);
-    }
-    return val;
-};
+			// parse and evaluate exps
+			char *s = parseword(p);
+			if (!s) {
+				numargs = i;
+				s = "";
+			}
+
+			// substitute variables
+			if (*s == '$')
+				s = lookup(s);
+			w[i] = s;
+		};
+
+		p += strcspn(p, ";\n\0");
+
+		// more statements if this isn't the end of the string
+		cont = *p++ != 0;
+		char *c = w[0];
+
+		// strip irc-style command prefix
+		if (*c == '/')
+			c++;
+
+		// empty statement
+		if (!*c)
+			continue;
+
+		@autoreleasepool {
+			Ident *i = idents[@(c)];;
+
+			if (i == nil) {
+				val = ATOI(c);
+
+				if (!val && *c != '0')
+					conoutf("unknown command: %s", c);
+			} else {
+				switch (i.type) {
+				// game defined commands
+				case ID_COMMAND:
+					// use very ad-hoc function signature,
+					// and just call it
+					switch (i.narg) {
+					case ARG_1INT:
+						if (isdown)
+							((void (__cdecl *)(int))i.fun)(ATOI(w[1]));
+						break;
+					case ARG_2INT:
+						if (isdown)
+							((void (__cdecl *)(int, int))i.fun)(ATOI(w[1]), ATOI(w[2]));
+						break;
+					case ARG_3INT:
+						if (isdown)
+							((void (__cdecl *)(int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3]));
+						break;
+					case ARG_4INT:
+						if (isdown)
+							((void (__cdecl *)(int, int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3]), ATOI(w[4]));
+						break;
+					case ARG_NONE:
+						if (isdown)
+							((void (__cdecl *)())i.fun)();
+						break;
+					case ARG_1STR:
+						if (isdown)
+							((void (__cdecl *)(char *))i.fun)(w[1]);
+						break;
+					case ARG_2STR:
+						if (isdown)
+							((void (__cdecl *)(char *, char *))i.fun)(w[1], w[2]);
+						break;
+					case ARG_3STR:
+						if (isdown)
+							((void (__cdecl *)(char *, char *, char*))i.fun)(w[1], w[2], w[3]);
+						break;
+					case ARG_5STR:
+						if (isdown)
+							((void (__cdecl *)(char *, char *, char*, char*, char*))i.fun)(w[1], w[2], w[3], w[4], w[5]);
+						break;
+					case ARG_DOWN:
+						((void (__cdecl *)(bool))i.fun)(isdown);
+						break;
+					case ARG_DWN1:
+						((void (__cdecl *)(bool, char *))i.fun)(isdown, w[1]);
+						break;
+					case ARG_1EXP:
+						if (isdown)
+							val = ((int (__cdecl *)(int))i.fun)(execute(w[1]));
+						break;
+					case ARG_2EXP:
+						if (isdown)
+							val = ((int (__cdecl *)(int, int))i.fun)(execute(w[1]), execute(w[2]));
+						break;
+					case ARG_1EST:
+						if (isdown)
+							val = ((int (__cdecl *)(char *))i.fun)(w[1]);
+						break;
+					case ARG_2EST:
+						if (isdown)
+							val = ((int (__cdecl *)(char *, char *))i.fun)(w[1], w[2]);
+						break;
+					case ARG_VARI:
+						if (isdown) {
+							// limit, remove
+							string r;
+
+							r[0] = 0;
+
+							for (int i = 1; i < numargs; i++) {
+								// make string-list out of all arguments
+								strcat_s(r, w[i]);
+
+								if (i == numargs - 1)
+									break;
+
+								strcat_s(r, " ");
+							}
+							((void (__cdecl *)(char *))i.fun)(r);
+						}
+						break;
+					}
+					break;
+				// game defined variabled
+				case ID_VAR:
+					if (isdown) {
+						if (!w[1][0])
+							// var with no value just prints its current value
+							conoutf("%s = %d", c, *i.storage);
+						else {
+							if (i.min > i.max)
+								conoutf("variable is read-only");
+							else {
+								int i1 = ATOI(w[1]);
+
+								if (i1 < i.min || i1 > i.max) {
+									// clamp to valid range
+									i1 = i1 < i.min ? i.min : i.max;
+									conoutf("valid range for %s is %d..%d", c, i.min, i.max);
+								}
+								*i.storage = i1;
+							}
+
+							if (i.fun != NULL)
+								// call trigger function if available
+								((void (__cdecl *)())i.fun)();
+						}
+					}
+					break;
+				// alias, also used as functions and (global) variables
+				case ID_ALIAS:
+					for (int i = 1; i < numargs; i++) {
+						// set any arguments as (global) arg values so functions can access them
+						sprintf_sd(t)("arg%d", i);
+						alias(t, w[i]);
+					}
+
+					char *action = newstring(i.action);   // create new string here because alias could rebind itself
+					val = execute(action, isdown);
+					gp()->deallocstr(action);
+
+					break;
+				}
+			}
+		}
+
+		loopj(numargs)
+		    gp()->deallocstr(w[j]);
+	}
+
+	return val;
+}
 
 // tab-completion of all idents
 
@@ -389,29 +465,42 @@ void exec(char *cfgfile)
 
 void writecfg()
 {
-	FILE *f = fopen("config.cfg", "w");
-	if (f == NULL)
-		return;
-	fprintf(f, "// automatically written on exit, do not modify\n// delete this file to have defaults.cfg overwrite these settings\n// modify settings in game, or put settings in autoexec.cfg to override anything\n\n");
-	writeclientinfo(f);
-	fprintf(f, "\n");
+	@autoreleasepool {
+		OFFile *f = [OFFile fileWithPath: @"config.cfg"
+					    mode: @"w"];
 
-	[idents enumerateKeysAndObjectsUsingBlock:
-	    ^ (OFString *name, Ident *i, BOOL *stop) {
-		if (i->_type == ID_VAR && i->_persist)
-			fprintf(f, "%s %d\n", i->_name, *i->_storage);
-	}];
-	fprintf(f, "\n");
-	writebinds(f);
-	fprintf(f, "\n");
+		if (f == NULL)
+			return;
 
-	[idents enumerateKeysAndObjectsUsingBlock:
-	    ^ (OFString *name, Ident *i, BOOL *stop) {
-		if (i->_type == ID_ALIAS && ![name hasPrefix: @"nextmap_"])
-			fprintf(f, "alias \"%s\" [%s]\n", i->_name, i->_action);
-	}];
+		[f writeString:
+		    @"// automatically written on exit, do not modify\n"
+		    @"// delete this file to have defaults.cfg overwrite "
+		    @"these settings\n"
+		    @"// modify settings in game, or put settings in "
+		    @"autoexec.cfg to override anything\n\n"];
 
-	fclose(f);
+		writeclientinfo(f);
+		[f writeString: @"\n"];
+
+		[idents enumerateKeysAndObjectsUsingBlock:
+		    ^ (OFString *name, Ident *i, BOOL *stop) {
+			    if (i.type == ID_VAR && i.persist)
+				    [f writeFormat: @"%s %d\n",
+						    i.name, *i.storage];
+		}];
+		[f writeString: @"\n"];
+
+		writebinds(f);
+		[f writeString: @"\n"];
+
+		[idents enumerateKeysAndObjectsUsingBlock:
+		    ^ (OFString *name, Ident *i, BOOL *stop) {
+			if (i.type == ID_ALIAS &&
+			    ![name hasPrefix: @"nextmap_"])
+				[f writeFormat: @"alias \"%s\" [%s]\n",
+						i.name, i.action];
+		}];
+	}
 }
 
 COMMAND(writecfg, ARG_NONE);

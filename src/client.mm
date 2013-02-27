@@ -46,10 +46,12 @@ void newteam(char *name) { c2sinit = false; strn0cpy(player1->team, name, 5); };
 COMMANDN(team, newteam, ARG_1STR);
 COMMANDN(name, newname, ARG_1STR);
 
-void writeclientinfo(FILE *f)
+void
+writeclientinfo(OFFile *f)
 {
-    fprintf(f, "name \"%s\"\nteam \"%s\"\n", player1->name, player1->team);
-};
+	[f writeFormat: @"name \"%s\"\nteam \"%s\"\n",
+			player1->name, player1->team];
+}
 
 void connects(char *servername)
 {

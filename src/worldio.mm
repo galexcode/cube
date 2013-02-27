@@ -102,15 +102,24 @@ void toptimize() // FIXME: only does 2x2, make atleast for 4x4 also
 
 // these two are used by getmap/sendmap.. transfers compressed maps directly
 
-void writemap(char *mname, int msize, uchar *mdata)
+void
+writemap(char *mname, int msize, uchar *mdata)
 {
-    setnames(mname);
-    backup(cgzname, bakname);
-    FILE *f = fopen(cgzname, "wb");
-    if(!f) { conoutf("could not write map to %s", cgzname); return; };
-    fwrite(mdata, 1, msize, f);
-    fclose(f);
-    conoutf("wrote map %s as file %s", mname, cgzname);
+	setnames(mname);
+	backup(cgzname, bakname);
+
+	@autoreleasepool {
+		@try {
+			OFFile *f = [OFFile fileWithPath: @(cgzname)
+						    mode: @"wb"];
+			[f writeBuffer: mdata
+				length: msize];
+		} @catch (id e) {
+			conoutf("could not write map to %s", cgzname);
+		}
+	}
+
+	conoutf("wrote map %s as file %s", mname, cgzname);
 }
 
 uchar *readmap(char *mname, int *msize)

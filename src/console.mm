@@ -245,10 +245,12 @@ char *getcurcommand()
     return saycommandon ? commandbuf : NULL;
 };
 
-void writebinds(FILE *f)
+void
+writebinds(OFFile *f)
 {
-    loopi(numkm)
-    {
-        if(*keyms[i].action) fprintf(f, "bind \"%s\" [%s]\n", keyms[i].name, keyms[i].action);
-    };
-};
+	loopi(numkm) {
+		if (*keyms[i].action)
+			[f writeFormat: @"bind \"%s\" [%s]\n",
+					keyms[i].name, keyms[i].action];
+	}
+}
