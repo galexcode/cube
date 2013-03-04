@@ -88,7 +88,7 @@ void loadstate(char *fn)
     string mapname;
     gzread(f, mapname, _MAXDEFSTR);
     nextmode = gzgeti();
-    changemap(mapname); // continue below once map has been loaded and client & server have updated
+    @autoreleasepool { changemap(@(mapname)); } // continue below once map has been loaded and client & server have updated
     return;
     out:
     conoutf("aborting: savegame/demo from a different version of cube or cpu architecture");

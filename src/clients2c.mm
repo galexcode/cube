@@ -13,16 +13,20 @@ void neterr(char *s)
     disconnect();
 };
 
-void changemapserv(char *name, int mode)        // forced map change from the server
+// forced map change from the server
+void
+changemapserv(OFString *name, int mode)
 {
-    gamemode = mode;
-    load_world(name);
-};
+	gamemode = mode;
+	load_world(name);
+}
 
-void changemap(char *name)                      // request map change, server may ignore
+// request map change, server may ignore
+void
+changemap(OFString *name)
 {
-    strcpy_s(toservermap, name);
-};
+	strcpy_s(toservermap, [name UTF8String]);
+}
 
 // update the position of other clients in the game in our world
 // don't care if he's in the scenery or other players,
@@ -127,7 +131,7 @@ void localservertoclient(uchar *buf, int len)   // processes any updates from th
 
         case SV_MAPCHANGE:
             sgetstr();
-            changemapserv(text, getint(p));
+            @autoreleasepool { changemapserv(@(text), getint(p)); }
             mapchanged = true;
             break;
 
@@ -144,7 +148,7 @@ void localservertoclient(uchar *buf, int len)   // processes any updates from th
             getint(p);
             sprintf_sd(nextmapalias)("nextmap_%s", getclientmap());
             char *map = getalias(nextmapalias);     // look up map in the cycle
-            changemap(map ? map : getclientmap());
+            @autoreleasepool { changemap(@(map ? map : getclientmap())); }
             break;
         };
 
@@ -333,7 +337,7 @@ void localservertoclient(uchar *buf, int len)   // processes any updates from th
             int mapsize = getint(p);
             writemap(text, mapsize, p);
             p += mapsize;
-            changemapserv(text, gamemode);
+            @autoreleasepool { changemapserv(@(text), gamemode); }
             break;
         };
 

@@ -198,16 +198,29 @@ void otherplayers()
     };
 };
 
-void respawn()
+void
+respawn()
 {
-    if(player1->state==CS_DEAD)
-    {
-        player1->attacking = false;
-        if(m_arena) { conoutf("waiting for new round to start..."); return; };
-        if(m_sp) { nextmode = gamemode; changemap(clientmap); return; };    // if we die in SP we try the same map again
+	if (player1->state == CS_DEAD) {
+		player1->attacking = false;
+
+		if (m_arena) {
+			conoutf("waiting for new round to start...");
+			return;
+		}
+
+		// if we die in SP we try the same map again
+		if (m_sp) {
+			nextmode = gamemode;
+			@autoreleasepool {
+				changemap(@(clientmap));
+			}
+			return;
+		}
+
 		respawnself();
-	};
-};
+	}
+}
 
 int sleepwait = 0;
 string sleepcmd;
@@ -424,32 +437,49 @@ dynent *getclient(int cn)   // ensure valid entity
     return players[cn] ? players[cn] : (players[cn] = newdynent());
 };
 
-void initclient()
+void
+initclient()
 {
-    clientmap[0] = 0;
-    initclientnet();
-};
+	clientmap[0] = 0;
+	initclientnet();
+}
 
-void startmap(char *name)   // called just after a map load
+// called just after a map load
+void
+startmap(OFString *name)
 {
-    if(netmapstart() && m_sp) { gamemode = 0; conoutf("coop sp not supported yet"); };
-    sleepwait = 0;
-    monsterclear();
-    projreset();
-    spawncycle = -1;
-    spawnplayer(player1);
-    player1->frags = 0;
-    loopv(players) if(players[i]) players[i]->frags = 0;
-    resetspawns();
-    strcpy_s(clientmap, name);
-    if(editmode) toggleedit();
-    setvar("gamespeed", 100);
+	if (netmapstart() && m_sp) {
+		gamemode = 0;
+		conoutf("coop sp not supported yet");
+	}
+
+	sleepwait = 0;
+	monsterclear();
+	projreset();
+	spawncycle = -1;
+
+	spawnplayer(player1);
+
+	player1->frags = 0;
+	loopv(players)
+		if (players[i])
+			players[i]->frags = 0;
+
+	resetspawns();
+
+	strcpy_s(clientmap, [name UTF8String]);
+	if (editmode)
+		toggleedit();
+
+	setvar("gamespeed", 100);
 	setvar("fog", 180);
 	setvar("fogcolour", 0x8099B3);
-    showscores(false);
-    intermission = false;
-    framesinmap = 0;
-    conoutf("game mode is %s", modestr(gamemode));
-};
+
+	showscores(false);
+	intermission = false;
+	framesinmap = 0;
+
+	conoutf("game mode is %s", modestr(gamemode));
+}
 
 COMMANDN(map, changemap, ARG_1STR);

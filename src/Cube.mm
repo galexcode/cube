@@ -226,7 +226,7 @@ int framesinmap = 0;
 	log("localconnect");
 	localconnect();
 	// if this map is changed, also change depthcorrect()
-	changemap("metl3");
+	changemap(@"metl3");
 
 	log("mainloop");
 	int ignore = 5;

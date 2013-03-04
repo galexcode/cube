@@ -10,28 +10,30 @@ void backup(char *name, char *backupname)
 
 string cgzname, bakname, pcfname, mcfname;
 
-void setnames(char *name)
+void
+setnames(OFString *name)
 {
-    string pakname, mapname;
-    char *slash = strpbrk(name, "/\\");
-    if(slash)
-    {
-        strn0cpy(pakname, name, slash-name+1);
-        strcpy_s(mapname, slash+1);
-    }
-    else
-    {
-        strcpy_s(pakname, "base");
-        strcpy_s(mapname, name);
-    };
-    sprintf_s(cgzname)("packages/%s/%s.cgz",      pakname, mapname);
-    sprintf_s(bakname)("packages/%s/%s_%d.BAK",   pakname, mapname, lastmillis);
-    sprintf_s(pcfname)("packages/%s/package.cfg", pakname);
-    sprintf_s(mcfname)("packages/%s/%s.cfg",      pakname, mapname);
+	string pakname, mapname;
 
-    path(cgzname);
-    path(bakname);
-};
+	const char *slash = strpbrk([name UTF8String], "/\\");
+	if (slash) {
+		strn0cpy(pakname, [name UTF8String],
+		    slash - [name UTF8String] + 1);
+		strcpy_s(mapname, slash + 1);
+	} else {
+		strcpy_s(pakname, "base");
+		strcpy_s(mapname, [name UTF8String]);
+	}
+
+	sprintf_s(cgzname)("packages/%s/%s.cgz", pakname, mapname);
+	sprintf_s(bakname)("packages/%s/%s_%d.BAK", pakname, mapname,
+	    lastmillis);
+	sprintf_s(pcfname)("packages/%s/package.cfg", pakname);
+	sprintf_s(mcfname)("packages/%s/%s.cfg", pakname, mapname);
+
+	path(cgzname);
+	path(bakname);
+}
 
 // the optimize routines below are here to reduce the detrimental effects of messy mapping by
 // setting certain properties (vdeltas and textures) to neighbouring values wherever there is no
@@ -105,10 +107,10 @@ void toptimize() // FIXME: only does 2x2, make atleast for 4x4 also
 void
 writemap(char *mname, int msize, uchar *mdata)
 {
-	setnames(mname);
-	backup(cgzname, bakname);
-
 	@autoreleasepool {
+		setnames(@(mname));
+		backup(cgzname, bakname);
+
 		@try {
 			OFFile *f = [OFFile fileWithPath: @(cgzname)
 						    mode: @"wb"];
@@ -124,7 +126,7 @@ writemap(char *mname, int msize, uchar *mdata)
 
 uchar *readmap(char *mname, int *msize)
 {
-    setnames(mname);
+    @autoreleasepool { setnames(@(mname)); }
     uchar *mdata = (uchar *)loadfile(cgzname, msize);
     if(!mdata) { conoutf("could not read map %s", cgzname); return NULL; };
     return mdata;
@@ -140,7 +142,7 @@ void save_world(char *mname)
     voptimize();
     toptimize();
     if(!*mname) mname = getclientmap();
-    setnames(mname);
+    @autoreleasepool { setnames(@(mname)); }
     backup(cgzname, bakname);
     gzFile f = gzopen(cgzname, "wb9");
     if(!f) { conoutf("could not write map to %s", cgzname); return; };
@@ -215,7 +217,12 @@ void save_world(char *mname)
     settagareas();
 };
 
-void load_world(char *mname)        // still supports all map formats that have existed since the earliest cube betas!
+/*
+ * still supports all map formats that have existed since the earliest cube
+ * betas!
+ */
+void
+load_world(OFString *mname)
 {
     stopifrecording();
     cleardlights();

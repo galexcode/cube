@@ -71,14 +71,14 @@ extern void neterr(char *s);
 extern void initclientnet();
 extern bool netmapstart();
 extern int getclientnum();
-extern void changemapserv(char *name, int mode);
+extern void changemapserv(OFString *name, int mode);
 extern void writeclientinfo(OFFile *f);
 
 // clientgame
 extern void mousemove(int dx, int dy);
 extern void updateworld(int millis);
-extern void startmap(char *name);
-extern void changemap(char *name);
+extern void startmap(OFString *name);
+extern void changemap(OFString *name);
 extern void initclient();
 extern void spawnplayer(dynent *d);
 extern void selfdamage(int damage, int actor, dynent *act);
@@ -165,7 +165,7 @@ extern void render_particles(int time);
 
 // worldio
 extern void save_world(char *fname);
-extern void load_world(char *mname);
+extern void load_world(OFString *mname);
 extern void writemap(char *mname, int msize, uchar *mdata);
 extern uchar *readmap(char *mname, int *msize);
 extern void loadgamerest();

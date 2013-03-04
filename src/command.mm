@@ -58,7 +58,7 @@ void alias(char *name, char *action)
 			b.type = ID_ALIAS;
 			b.name = @(name);
 			b.action = @(action);
-			b.persist = YES;
+			b.persist = true;
 
 			idents[@(name)] = b;
 		} else {
@@ -90,7 +90,7 @@ variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
 		v.max = max;
 		v.storage = storage;
 		v.fun = fun;
-		v.persist = YES;
+		v.persist = true;
 
 		idents[@(name)] = v;
 	}
