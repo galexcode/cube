@@ -140,10 +140,10 @@ struct pool
     void dealloc(void *p, size_t size);
     void *realloc(void *p, size_t oldsize, size_t newsize);
 
-    char *string(char *s, size_t l);
-    char *string(char *s) { return string(s, strlen(s)); };
+    char *string(const char *s, size_t l);
+    char *string(const char *s) { return string(s, strlen(s)); };
     void deallocstr(char *s) { dealloc(s, strlen(s)+1); };
-    char *stringbuf(char *s) { return string(s, _MAXDEFSTR-1); };
+    char *stringbuf(const char *s) { return string(s, _MAXDEFSTR-1); };
 
     void dealloc_block(void *b);
     void allocnext(size_t allocsize);
@@ -223,9 +223,9 @@ template <class T> struct vector
 #define loopvrev(v) if(false) {} else for(int i = (v).length()-1; i>=0; i--)
 
 
-inline char *newstring(char *s)        { return gp()->string(s);    };
-inline char *newstring(char *s, size_t l) { return gp()->string(s, l); };
-inline char *newstringbuf(char *s)     { return gp()->stringbuf(s); };
+inline char *newstring(const char *s)        { return gp()->string(s);    };
+inline char *newstring(const char *s, size_t l) { return gp()->string(s, l); };
+inline char *newstringbuf(const char *s)     { return gp()->stringbuf(s); };
 
 #endif
 

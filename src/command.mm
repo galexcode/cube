@@ -8,23 +8,23 @@ enum { ID_VAR, ID_COMMAND, ID_ALIAS };
 @interface Ident: OFObject
 {
 	int _type;           // one of ID_* above
-	char *_name;
+	OFString *_name;
 	int _min, _max;      // ID_VAR
 	int *_storage;       // ID_VAR
 	void (*_fun)();      // ID_VAR, ID_COMMAND
 	int _narg;           // ID_VAR, ID_COMMAND
-	char *_action;       // ID_ALIAS
-	BOOL _persist;
+	OFString *_action;       // ID_ALIAS
+	bool _persist;
 }
 
 @property int type;
-@property char *name;
+@property (copy) OFString *name;
 @property int min, max;
 @property void (*fun)();
 @property int *storage;
 @property int narg;
-@property char *action;
-@property BOOL persist;
+@property (copy) OFString *action;
+@property bool persist;
 @end
 
 @implementation Ident
@@ -40,7 +40,7 @@ itoa(char *s, int i)
 }
 
 char*
-exchangestr(char *o, char *n)
+exchangestr(char *o, const char *n)
 {
 	gp()->deallocstr(o);
 	return newstring(n);
@@ -56,14 +56,14 @@ void alias(char *name, char *action)
 		if (b == nil) {
 			b = [Ident new];
 			b.type = ID_ALIAS;
-			b.name = newstring(name);
-			b.action = newstring(action);
+			b.name = @(name);
+			b.action = @(action);
 			b.persist = YES;
 
 			idents[@(name)] = b;
 		} else {
 			if (b.type == ID_ALIAS)
-				b.action = exchangestr(b.action, action);
+				b.action = @(action);
 			else
 				conoutf("cannot redefine builtin %s with an "
 				    "alias", name);
@@ -85,7 +85,7 @@ variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
 
 		Ident *v = [Ident new];
 		v.type = ID_VAR;
-		v.name = name;
+		v.name = @(name);
 		v.min = min;
 		v.max = max;
 		v.storage = storage;
@@ -129,14 +129,15 @@ getalias(char *name)
 		Ident *i = idents[@(name)];
 
 		if (i.type == ID_ALIAS)
-			return i.action;
+			/* FIXME: Evil cast as a temporary workaround */
+			return (char*)[i.action UTF8String];
 	}
 
 	return NULL;
 }
 
 bool
-addcommand(char *name, void (*fun)(), int narg)
+addcommand(OFString *name, void (*fun)(), int narg)
 {
 	@autoreleasepool {
 		if (idents == nil)
@@ -148,7 +149,7 @@ addcommand(char *name, void (*fun)(), int narg)
 		c.fun = fun;
 		c.narg = narg;
 
-		idents[@(name)] = c;
+		idents[name] = c;
 	}
 
 	return false;
@@ -211,7 +212,7 @@ char
 				itoa(t, *(i.storage));
 				return exchangestr(n, t);
 			case ID_ALIAS:
-				return exchangestr(n, i.action);
+				return exchangestr(n, [i.action UTF8String]);
 			}
 		}
 	}
@@ -393,7 +394,7 @@ int execute(char *p, bool isdown)
 						alias(t, w[i]);
 					}
 
-					char *action = newstring(i.action);   // create new string here because alias could rebind itself
+					char *action = newstring([i.action UTF8String]);   // create new string here because alias could rebind itself
 					val = execute(action, isdown);
 					gp()->deallocstr(action);
 
@@ -483,9 +484,9 @@ void writecfg()
 		[f writeString: @"\n"];
 
 		[idents enumerateKeysAndObjectsUsingBlock:
-		    ^ (OFString *name, Ident *i, BOOL *stop) {
+		    ^ (OFString *name, Ident *i, bool *stop) {
 			    if (i.type == ID_VAR && i.persist)
-				    [f writeFormat: @"%s %d\n",
+				    [f writeFormat: @"%@ %d\n",
 						    i.name, *i.storage];
 		}];
 		[f writeString: @"\n"];
@@ -494,10 +495,10 @@ void writecfg()
 		[f writeString: @"\n"];
 
 		[idents enumerateKeysAndObjectsUsingBlock:
-		    ^ (OFString *name, Ident *i, BOOL *stop) {
+		    ^ (OFString *name, Ident *i, bool *stop) {
 			if (i.type == ID_ALIAS &&
 			    ![name hasPrefix: @"nextmap_"])
-				[f writeFormat: @"alias \"%s\" [%s]\n",
+				[f writeFormat: @"alias \"%@\" [%@]\n",
 						i.name, i.action];
 		}];
 	}

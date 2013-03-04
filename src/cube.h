@@ -269,7 +269,7 @@ enum    // function signatures for script functions, see command.cpp
 };
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
-#define COMMANDN(name, fun, nargs) static bool __dummy_##fun = addcommand(#name, (void (*)())fun, nargs)
+#define COMMANDN(name, fun, nargs) static bool __dummy_##fun = addcommand(@#name, (void (*)())fun, nargs)
 #define COMMAND(name, nargs) COMMANDN(name, name, nargs)
 #define VARP(name, min, cur, max) int name = variable(#name, min, cur, max, &name, NULL, true)
 #define VAR(name, min, cur, max)  int name = variable(#name, min, cur, max, &name, NULL, false)
