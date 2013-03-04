@@ -2,37 +2,48 @@
 
 #include "cube.h"
 
-void backup(char *name, char *backupname)
+void
+backup(OFString *name, OFString *backupname)
 {
-    remove(backupname);
-    rename(name, backupname);
-};
+	@try {
+		[OFFile deleteFileAtPath: backupname];
+	} @catch (OFDeleteFileFailedException *e) {
+	}
 
-string cgzname, bakname, pcfname, mcfname;
+	[OFFile renameFileAtPath: name
+			  toPath: backupname];
+}
+
+OFString *cgzname = nil;
+OFString *bakname = nil;
+OFString *pcfname = nil;
+OFString *mcfname = nil;
 
 void
 setnames(OFString *name)
 {
-	string pakname, mapname;
+	OFArray *components = [name pathComponents];
+	OFString *pakname, *mapname;
 
-	const char *slash = strpbrk([name UTF8String], "/\\");
-	if (slash) {
-		strn0cpy(pakname, [name UTF8String],
-		    slash - [name UTF8String] + 1);
-		strcpy_s(mapname, slash + 1);
+	if (components.count > 1) {
+		pakname = components[0];
+		mapname = [[components objectsInRange:
+		    of_range(1, components.count - 1)]
+		    componentsJoinedByString: OF_PATH_DELIMITER_STRING];
 	} else {
-		strcpy_s(pakname, "base");
-		strcpy_s(mapname, [name UTF8String]);
+		pakname = @"base";
+		mapname = name;
 	}
 
-	sprintf_s(cgzname)("packages/%s/%s.cgz", pakname, mapname);
-	sprintf_s(bakname)("packages/%s/%s_%d.BAK", pakname, mapname,
-	    lastmillis);
-	sprintf_s(pcfname)("packages/%s/package.cfg", pakname);
-	sprintf_s(mcfname)("packages/%s/%s.cfg", pakname, mapname);
-
-	path(cgzname);
-	path(bakname);
+	cgzname = [[OFString alloc] initWithFormat: @"packages/%@/%@.cgz",
+						    pakname, mapname];
+	bakname = [[OFString alloc] initWithFormat: @"packages/%@/%@_%d.BAK",
+						    pakname, mapname,
+						    lastmillis];
+	pcfname = [[OFString alloc] initWithFormat: @"packages/%@/package.cfg",
+						    pakname];
+	mcfname = [[OFString alloc] initWithFormat: @"packages/%@/%@.cfg",
+						    pakname, mapname];
 }
 
 // the optimize routines below are here to reduce the detrimental effects of messy mapping by
@@ -112,24 +123,33 @@ writemap(char *mname, int msize, uchar *mdata)
 		backup(cgzname, bakname);
 
 		@try {
-			OFFile *f = [OFFile fileWithPath: @(cgzname)
+			OFFile *f = [OFFile fileWithPath: cgzname
 						    mode: @"wb"];
 			[f writeBuffer: mdata
 				length: msize];
 		} @catch (id e) {
-			conoutf("could not write map to %s", cgzname);
+			conoutf("could not write map to %s",
+			    [cgzname UTF8String]);
 		}
 	}
 
-	conoutf("wrote map %s as file %s", mname, cgzname);
+	conoutf("wrote map %s as file %s", mname, [cgzname UTF8String]);
 }
 
-uchar *readmap(char *mname, int *msize)
+uchar*
+readmap(char *mname, int *msize)
 {
-    @autoreleasepool { setnames(@(mname)); }
-    uchar *mdata = (uchar *)loadfile(cgzname, msize);
-    if(!mdata) { conoutf("could not read map %s", cgzname); return NULL; };
-    return mdata;
+	@autoreleasepool {
+		setnames(@(mname));
+	}
+
+	uchar *mdata = (uchar*)loadfile(cgzname, msize);
+	if (!mdata) {
+		conoutf("could not read map %s", [cgzname UTF8String]);
+		return NULL;
+	}
+
+	return mdata;
 }
 
 // save map as .cgz file. uses 2 layers of compression: first does simple run-length
@@ -144,8 +164,8 @@ void save_world(char *mname)
     if(!*mname) mname = getclientmap();
     @autoreleasepool { setnames(@(mname)); }
     backup(cgzname, bakname);
-    gzFile f = gzopen(cgzname, "wb9");
-    if(!f) { conoutf("could not write map to %s", cgzname); return; };
+    gzFile f = gzopen([cgzname UTF8String], "wb9");
+    if(!f) { conoutf("could not write map to %s", [cgzname UTF8String]); return; };
     hdr.version = MAPVERSION;
     hdr.numents = 0;
     loopv(ents) if(ents[i].type!=NOTUSED) hdr.numents++;
@@ -213,7 +233,7 @@ void save_world(char *mname)
     };
     spurge;
     gzclose(f);
-    conoutf("wrote map file %s", cgzname);
+    conoutf("wrote map file %s", [cgzname UTF8String]);
     settagareas();
 };
 
@@ -228,8 +248,8 @@ load_world(OFString *mname)
     cleardlights();
     pruneundos();
     setnames(mname);
-    gzFile f = gzopen(cgzname, "rb9");
-    if(!f) { conoutf("could not read map %s", cgzname); return; };
+    gzFile f = gzopen([cgzname UTF8String], "rb9");
+    if(!f) { conoutf("could not read map %s", [cgzname UTF8String]); return; };
     gzread(f, &hdr, sizeof(header)-sizeof(int)*16);
     endianswap(&hdr.version, sizeof(int), 4);
     if(strncmp(hdr.head, "CUBE", 4)!=0) [Cube fatalError: @"while reading map: header malformatted"];
@@ -328,7 +348,7 @@ load_world(OFString *mname)
     settagareas();
     int xs, ys;
     loopi(256) if(texuse) lookuptexture(i, xs, ys);
-    conoutf("read map %s (%d milliseconds)", cgzname, SDL_GetTicks()-lastmillis);
+    conoutf("read map %s (%d milliseconds)", [cgzname UTF8String], SDL_GetTicks()-lastmillis);
     conoutf("%s", hdr.maptitle);
     startmap(mname);
     loopl(256)
@@ -337,8 +357,8 @@ load_world(OFString *mname)
         if(identexists(aliasname)) alias(aliasname, "");
     };
     execfile("data/default_map_settings.cfg");
-    execfile(pcfname);
-    execfile(mcfname);
+    execfile([pcfname UTF8String]);
+    execfile([mcfname UTF8String]);
 };
 
 COMMANDN(savemap, save_world, ARG_1STR);

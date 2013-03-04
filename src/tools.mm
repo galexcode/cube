@@ -106,18 +106,18 @@ char *path(char *s)
     return s;
 };
 
-char *loadfile(char *fn, int *size)
+char*
+loadfile(OFString *fn, int *size)
 {
 	char *buf = NULL;
 	size_t len;
 
 	@autoreleasepool {
 		@try {
-			OFString *path = @(fn);
-			OFFile *f = [OFFile fileWithPath: path
+			OFFile *f = [OFFile fileWithPath: fn
 						    mode: @"rb"];
 
-			len = [OFFile sizeOfFileAtPath: path];
+			len = [OFFile sizeOfFileAtPath: fn];
 
 			if ((buf = (char*)malloc(len + 1)) == NULL)
 				return NULL;

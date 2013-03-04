@@ -113,7 +113,7 @@ inline int fast_f2nat(float a) {        // only for positive floats
 
 
 extern char *path(char *s);
-extern char *loadfile(char *fn, int *size);
+extern char *loadfile(OFString *fn, int *size);
 extern void endianswap(void *, int, int);
 
 // memory pool that uses buckets and linear allocation for small objects

@@ -8,7 +8,7 @@ extern bool identexists(char *name);
 extern bool addcommand(OFString *name, void (*fun)(), int narg);
 extern int execute(char *p, bool down = true);
 extern void exec(char *cfgfile);
-extern bool execfile(char *cfgfile);
+extern bool execfile(const char *cfgfile);
 extern void resetcomplete();
 extern void complete(char *s);
 extern void alias(char *name, char *action);

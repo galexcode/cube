@@ -448,16 +448,25 @@ void complete(char *s)
 		completeidx = 0;
 }
 
-bool execfile(char *cfgfile)
+bool
+execfile(const char *cfgfile)
 {
-    string s;
-    strcpy_s(s, cfgfile);
-    char *buf = loadfile(path(s), NULL);
-    if(!buf) return false;
-    execute(buf);
-    free(buf);
-    return true;
-};
+	string s;
+	strcpy_s(s, cfgfile);
+
+	char *buf;
+	@autoreleasepool {
+		buf = loadfile(@(path(s)), NULL);
+	}
+
+	if (!buf)
+		return false;
+
+	execute(buf);
+	free(buf);
+
+	return true;
+}
 
 void exec(char *cfgfile)
 {
