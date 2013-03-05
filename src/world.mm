@@ -49,8 +49,6 @@ void trigger(int tag, int type, bool savegame)
     if(type==2) endsp(false);
 };
 
-COMMAND(trigger, ARG_2INT);
-
 // main geometric mipmapping routine, recursively rebuild mipmaps within block b.
 // tries to produce cube out of 4 lower level mips as well as possible,
 // sets defer to 0 if mipped cube is a perfect mip, i.e. can be rendered at this
@@ -249,8 +247,6 @@ void clearents(char *name)
     if(type==LIGHT) calclight();
 };
 
-COMMAND(clearents, ARG_1STR);
-
 void scalecomp(uchar &c, int intens)
 {
     int n = c*intens/100;
@@ -276,8 +272,6 @@ void scalelights(int f, int intens)
     };
     calclight();
 };
-
-COMMAND(scalelights, ARG_2INT);
 
 int findentity(int type, int index)
 {
@@ -364,9 +358,15 @@ void empty_world(int factor, bool force)    // main empty world creation routine
 void mapenlarge()  { empty_world(-1, false); };
 void newmap(int i) { empty_world(i, false); };
 
-COMMAND(mapenlarge, ARG_NONE);
-COMMAND(newmap, ARG_1INT);
-COMMANDN(recalc, calclight, ARG_NONE);
-COMMAND(delent, ARG_NONE);
-COMMAND(entproperty, ARG_2INT);
-
+void
+init_world()
+{
+	COMMAND(trigger, ARG_2INT);
+	COMMAND(clearents, ARG_1STR);
+	COMMAND(scalelights, ARG_2INT);
+	COMMAND(mapenlarge, ARG_NONE);
+	COMMAND(newmap, ARG_1INT);
+	COMMANDN(recalc, calclight, ARG_NONE);
+	COMMAND(delent, ARG_NONE);
+	COMMAND(entproperty, ARG_2INT);
+}

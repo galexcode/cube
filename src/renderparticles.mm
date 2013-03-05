@@ -8,7 +8,7 @@ struct particle { vec o, d; int fade, type; int millis; particle *next; };
 particle particles[MAXPARTICLES], *parlist = NULL, *parempty = NULL;
 bool parinit = false;
 
-VARP(maxparticles, 100, 2000, MAXPARTICLES-500);
+static int maxparticles;
 
 void newparticle(vec &o, vec &d, int fade, int type)
 {
@@ -35,8 +35,7 @@ void newparticle(vec &o, vec &d, int fade, int type)
     };
 };
 
-VAR(demotracking, 0, 0, 1);
-VARP(particlesize, 20, 100, 500);
+static int demotracking, particlesize;
 
 vec right, up;
 
@@ -140,3 +139,10 @@ void particle_trail(int type, int fade, vec &s, vec &e)
     };
 };
 
+void
+init_renderparticles()
+{
+	VARP(maxparticles, 100, 2000, MAXPARTICLES - 500);
+	VAR(demotracking, 0, 0, 1);
+	VARP(particlesize, 20, 100, 500);
+}

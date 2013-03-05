@@ -195,6 +195,9 @@ void getmap()
     conoutf("requesting map from server...");
 }
 
-COMMAND(sendmap, ARG_1STR);
-COMMAND(getmap, ARG_NONE);
-
+void
+init_clientextras()
+{
+	COMMAND(sendmap, ARG_1STR);
+	COMMAND(getmap, ARG_NONE);
+}

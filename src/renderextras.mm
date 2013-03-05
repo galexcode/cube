@@ -183,8 +183,6 @@ void loadsky(char *basename)
     strcpy_s(lastsky, basename);
 };
 
-COMMAND(loadsky, ARG_1STR);
-
 float cursordepth = 0.9f;
 GLint viewport[4];
 GLdouble mm[16], pm[16];
@@ -254,13 +252,12 @@ void invertperspective()
     glLoadMatrixd(inv);
 };
 
-VARP(crosshairsize, 0, 15, 50);
+static int crosshairsize;
 
 int dblend = 0;
 void damageblend(int n) { dblend += n; };
 
-VAR(hidestats, 0, 0, 1);
-VARP(crosshairfx, 0, 1, 1);
+static int hidestats, crosshairfx;
 
 void gl_drawhud(int w, int h, int curfps, int nquads, int curvert, bool underwater)
 {
@@ -370,3 +367,12 @@ void gl_drawhud(int w, int h, int curfps, int nquads, int curvert, bool underwat
     glEnable(GL_DEPTH_TEST);
 };
 
+void
+init_renderextras()
+{
+	COMMAND(loadsky, ARG_1STR);
+
+	VARP(crosshairsize, 0, 15, 50);
+	VAR(hidestats, 0, 0, 1);
+	VARP(crosshairfx, 0, 1, 1);
+}

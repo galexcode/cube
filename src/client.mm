@@ -25,13 +25,16 @@ bool allowedittoggle()
     return allow;
 };
 
-VARF(rate, 0, 0, 25000, if(clienthost && (!rate || rate>1000)) enet_host_bandwidth_limit (clienthost, rate, rate));
+static int rate;
 
-void throttle();
+static void
+var_rate(void)
+{
+	if (clienthost && (!rate || rate > 1000))
+		enet_host_bandwidth_limit(clienthost, rate, rate);
+}
 
-VARF(throttle_interval, 0, 5, 30, throttle());
-VARF(throttle_accel,    0, 2, 32, throttle());
-VARF(throttle_decel,    0, 2, 32, throttle());
+static int throttle_interval, throttle_accel, throttle_decel;
 
 void throttle()
 {
@@ -40,11 +43,26 @@ void throttle()
     enet_peer_throttle_configure(clienthost->peers, throttle_interval*1000, throttle_accel, throttle_decel);
 };
 
+static void
+var_throttle_interval(void)
+{
+	throttle();
+}
+
+static void
+var_throttle_accel(void)
+{
+	throttle();
+}
+
+static void
+var_throttle_decel(void)
+{
+	throttle();
+}
+
 void newname(char *name) { c2sinit = false; strn0cpy(player1->name, name, 16); };
 void newteam(char *name) { c2sinit = false; strn0cpy(player1->team, name, 5); };
-
-COMMANDN(team, newteam, ARG_1STR);
-COMMANDN(name, newname, ARG_1STR);
 
 void
 writeclientinfo(OFFile *f)
@@ -136,11 +154,6 @@ string ctext;
 void toserver(char *text) { conoutf("%s:\f %s", player1->name, text); strn0cpy(ctext, text, 80); };
 void echo(char *text) { conoutf("%s", text); };
 
-COMMAND(echo, ARG_VARI);
-COMMANDN(say, toserver, ARG_VARI);
-COMMANDN(connect, connects, ARG_1STR);
-COMMANDN(disconnect, trydisconnect, ARG_NONE);
-
 // collect c2s messages conveniently
 
 vector<ivector> messages;
@@ -176,7 +189,6 @@ bool senditemstoserver = false;     // after a map change, since server doesn't 
 
 string clientpassword;
 void password(char *p) { strcpy_s(clientpassword, p); };
-COMMAND(password, ARG_1STR);
 
 bool netmapstart() { senditemstoserver = true; return clienthost!=NULL; };
 
@@ -313,3 +325,20 @@ void gets2c()           // get updates from the server
     }
 };
 
+void
+init_client()
+{
+	COMMANDN(team, newteam, ARG_1STR);
+	COMMANDN(name, newname, ARG_1STR);
+	COMMAND(echo, ARG_VARI);
+	COMMANDN(say, toserver, ARG_VARI);
+	COMMANDN(connect, connects, ARG_1STR);
+	COMMANDN(disconnect, trydisconnect, ARG_NONE);
+	COMMAND(password, ARG_1STR);
+
+	VARF(rate, 0, 0, 25000);
+
+	VARF(throttle_interval, 0, 5, 30);
+	VARF(throttle_accel,    0, 2, 32);
+	VARF(throttle_decel,    0, 2, 32);
+}

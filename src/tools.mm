@@ -100,11 +100,13 @@ pool *gp()  // useful for global buffers that need to be initialisation order in
 
 ///////////////////////// misc tools ///////////////////////
 
-char *path(char *s)
+char*
+path(char *s)
 {
-    for(char *t = s; t = strpbrk(t, "/\\"); *t++ = PATHDIV);
-    return s;
-};
+	for (char *t = s; (t = strpbrk(t, "/\\")) != NULL; *t++ = PATHDIV);
+
+	return s;
+}
 
 char*
 loadfile(OFString *fn, int *size)

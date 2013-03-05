@@ -48,13 +48,11 @@ bool showm = false;
 void showmip() { showm = !showm; };
 void mipstats(int a, int b, int c) { if(showm) conoutf("1x1/2x2/4x4: %d / %d / %d", a, b, c); };
 
-COMMAND(showmip, ARG_NONE);
-
 #define stripend() { if(floorstrip || deltastrip) { addstrip(ogltex, firstindex, curvert-firstindex); floorstrip = deltastrip = false; }; };
 void finishstrips() { stripend(); };
 
 sqr sbright, sdark;
-VAR(lighterror,1,8,100);
+static int lighterror;
 
 void render_flat(int wtex, int x, int y, int size, int h, sqr *l1, sqr *l2, sqr *l3, sqr *l4, bool isceil)  // floor/ceil quads
 {
@@ -266,8 +264,14 @@ void render_square(int wtex, float floor1, float floor2, float ceil1, float ceil
 
 int wx1, wy1, wx2, wy2;
 
-VAR(watersubdiv, 1, 4, 64);
-VARF(waterlevel, -128, -128, 127, if(!noteditmode()) hdr.waterlevel = waterlevel);
+static int watersubdiv, waterlevel;
+
+static void
+var_waterlevel(void)
+{
+	if (!noteditmode())
+		hdr.waterlevel = waterlevel;
+}
 
 inline void vertw(int v1, float v2, int v3, sqr *c, float t1, float t2, float t)
 {
@@ -359,4 +363,12 @@ void resetcubes()
     sdark.r = sdark.g = sdark.b = 0;
 };
 
+void
+init_rendercubes()
+{
+	COMMAND(showmip, ARG_NONE);
 
+	VAR(lighterror,1,8,100);
+	VAR(watersubdiv, 1, 4, 64);
+	VARF(waterlevel, -128, -128, 127);
+}

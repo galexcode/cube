@@ -1,6 +1,7 @@
 // protos for ALL external functions in cube...
 
 // command
+extern void init_command(void);
 extern int variable(char *name, int min, int cur, int max, int *storage, void (*fun)(), bool persist);
 extern void setvar(char *name, int i);
 extern int getvar(char *name);
@@ -16,6 +17,7 @@ extern char *getalias(char *name);
 extern void writecfg();
 
 // console
+extern void init_console(void);
 extern void keypress(int code, bool isdown, int cooked);
 extern void renderconsole();
 extern void conoutf(const char *s, ...);
@@ -23,6 +25,7 @@ extern char *getcurcommand();
 extern void writebinds(OFFile *f);
 
 // menus
+extern void init_menus(void);
 extern bool rendermenu();
 extern void menuset(int menu);
 extern void menumanual(int m, int n, char *text);
@@ -31,11 +34,13 @@ extern bool menukey(int code, bool isdown);
 extern void newmenu(char *name);
 
 // serverbrowser
+extern void init_serverbrowser(void);
 extern void addserver(char *servername);
 extern char *getservername(int n);
 extern void writeservercfg();
 
 // rendergl
+extern void init_rendergl(void);
 extern void gl_init(int w, int h);
 extern void cleangl();
 extern void gl_drawframe(int w, int h, float curfps);
@@ -46,6 +51,7 @@ extern void addstrip(int tex, int start, int n);
 extern int lookuptexture(int tex, int &xs, int &ys);
 
 // rendercubes
+extern void init_rendercubes(void);
 extern void resetcubes();
 extern void render_flat(int tex, int x, int y, int size, int h, sqr *l1, sqr *l2, sqr *l3, sqr *l4, bool isceil);
 extern void render_flatdelta(int wtex, int x, int y, int size, float h1, float h2, float h3, float h4, sqr *l1, sqr *l2, sqr *l3, sqr *l4, bool isceil);
@@ -57,6 +63,7 @@ extern void finishstrips();
 extern void setarraypointers();
 
 // client
+extern void init_client(void);
 extern void localservertoclient(uchar *buf, int len);
 extern void connects(char *servername);
 extern void disconnect(int onlyclean = 0, int async = 0);
@@ -75,6 +82,7 @@ extern void changemapserv(OFString *name, int mode);
 extern void writeclientinfo(OFFile *f);
 
 // clientgame
+extern void init_clientgame(void);
 extern void mousemove(int dx, int dy);
 extern void updateworld(int millis);
 extern void startmap(OFString *name);
@@ -92,12 +100,14 @@ extern void resetmovement(dynent *d);
 extern void fixplayer1range();
 
 // clientextras
+extern void init_clientextras(void);
 extern void renderclients();
 extern void renderclient(dynent *d, bool team, char *mdlname, bool hellpig, float scale);
 void showscores(bool on);
 extern void renderscores();
 
 // world
+extern void init_world(void);
 extern void setupworld(int factor);
 extern void empty_world(int factor, bool force);
 extern void remip(block &b, int level = 0);
@@ -110,6 +120,7 @@ extern void settagareas();
 extern entity *newentity(int x, int y, int z, char *what, int v1, int v2, int v3, int v4);
 
 // worldlight
+extern void init_worldlight(void);
 extern void calclight();
 extern void dodynlight(vec &vold, vec &v, int reach, int strength, dynent *owner);
 extern void cleardlights();
@@ -120,6 +131,7 @@ extern void blockpaste(block &b);
 extern void render_world(float vx, float vy, float vh, int yaw, int pitch, float widef, int w, int h);
 
 // worldocull
+extern void init_worldocull(void);
 extern void computeraytable(float vx, float vy);
 extern int isoccluded(float vx, float vy, float cx, float cy, float csize);
 
@@ -134,6 +146,7 @@ extern int text_width(char *str);
 extern void draw_envbox(int t, int fogdist);
 
 // editing
+extern void init_editing(void);
 extern void cursorupdate();
 extern void toggleedit();
 extern void editdrag(bool isdown);
@@ -146,6 +159,7 @@ extern bool noteditmode();
 extern void pruneundos(int maxremain = 0);
 
 // renderextras
+extern void init_renderextras(void);
 extern void line(int x1, int y1, float z1, int x2, int y2, float z2);
 extern void box(block &b, float z1, float z2, float z3, float z4);
 extern void dot(int x, int y, float z);
@@ -158,12 +172,14 @@ extern void blendbox(int x1, int y1, int x2, int y2, bool border);
 extern void damageblend(int n);
 
 // renderparticles
+extern void init_renderparticles(void);
 extern void setorient(vec &r, vec &u);
 extern void particle_splash(int type, int num, int fade, vec &p);
 extern void particle_trail(int type, int fade, vec &from, vec &to);
 extern void render_particles(int time);
 
 // worldio
+extern void init_worldio(void);
 extern void save_world(char *fname);
 extern void load_world(OFString *mname);
 extern void writemap(char *mname, int msize, uchar *mdata);
@@ -177,6 +193,7 @@ extern void demodamage(int damage, vec &o);
 extern void demoblend(int damage);
 
 // physics
+extern void init_physics(void);
 extern void moveplayer(dynent *pl, int moveres, bool local);
 extern bool collide(dynent *d, bool spawn, float drop, float rise);
 extern void entinmap(dynent *d);
@@ -184,12 +201,14 @@ extern void setentphysics(int mml, int mmr);
 extern void physicsframe();
 
 // sound
+extern void init_sound(void);
 extern void playsound(int n, vec *loc = 0);
 extern void playsoundc(int n);
 extern void initsound();
 extern void cleansound();
 
-// rendermd2
+// MD2
+extern void init_MD2(void);
 extern void rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x, float y, float z, float yaw, float pitch, bool teammate, float scale, float speed, int snap = 0, int basetime = 0);
 extern MapModelInfo* getmminfo(int i);
 
@@ -213,6 +232,7 @@ extern void sendmaps(int n, string mapname, int mapsize, uchar *mapdata);
 extern ENetPacket *recvmap(int n);
 
 // weapon
+extern void init_weapon(void);
 extern void selectgun(int a = -1, int b = -1, int c =-1);
 extern void shoot(dynent *d, vec &to);
 extern void shootv(int gun, vec &from, vec &to, dynent *d = 0, bool local = false);
@@ -223,6 +243,7 @@ extern char *playerincrosshair();
 extern int reloadtime(int gun);
 
 // monster
+extern void init_monster(void);
 extern void monsterclear();
 extern void restoremonsterstate();
 extern void monsterthink();
@@ -246,3 +267,5 @@ extern void baseammo(int gun);
 // rndmap
 extern void perlinarea(block &b, int scale, int seed, int psize);
 
+// savegamedemo
+extern void init_savegamedemo(void);

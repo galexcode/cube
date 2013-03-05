@@ -211,7 +211,7 @@ void stopreset()
     disconnect(0, 0);
 };
 
-VAR(demoplaybackspeed, 10, 100, 1000);
+static int demoplaybackspeed;
 int scaletime(int t) { return (int)(t*(100.0f/demoplaybackspeed))+starttime; };
 
 void readdemotime()
@@ -236,7 +236,7 @@ void startdemo()
     readdemotime();
 };
 
-VAR(demodelaymsec, 0, 120, 500);
+static int demodelaymsec;
 
 void catmulrom(vec &z, vec &a, vec &b, vec &c, float s, vec &dest)		// spline interpolation
 {
@@ -352,9 +352,15 @@ void demoplaybackstep()
 
 void stopn() { if(demoplayback) stopreset(); else stop(); conoutf("demo stopped"); };
 
-COMMAND(record, ARG_1STR);
-COMMAND(demo, ARG_1STR);
-COMMANDN(stop, stopn, ARG_NONE);
+void
+init_savegamedemo()
+{
+	COMMAND(record, ARG_1STR);
+	COMMAND(demo, ARG_1STR);
+	COMMANDN(stop, stopn, ARG_NONE);
+	COMMAND(savegame, ARG_1STR);
+	COMMAND(loadgame, ARG_1STR);
 
-COMMAND(savegame, ARG_1STR);
-COMMAND(loadgame, ARG_1STR);
+	VAR(demoplaybackspeed, 10, 100, 1000);
+	VAR(demodelaymsec, 0, 120, 500);
+}

@@ -3,19 +3,16 @@
 #include "cube.h"
 
 int nextmode = 0;         // nextmode becomes gamemode after next map load
-VAR(gamemode, 1, 0, 0);
+int gamemode;
 
 void mode(int n) { addmsg(1, 2, SV_GAMEMODE, nextmode = n); };
-COMMAND(mode, ARG_1INT);
 
 bool intermission = false;
 
 dynent *player1 = newdynent();          // our client
 dvector players;                        // other clients
 
-VARP(sensitivity, 0, 10, 10000);
-VARP(sensitivityscale, 1, 1, 10000);
-VARP(invmouse, 0, 0, 1);
+static int sensitivity, sensitivityscale, invmouse;
 
 int lastmillis = 0;
 int curtime = 10;
@@ -225,7 +222,6 @@ respawn()
 int sleepwait = 0;
 string sleepcmd;
 void sleepf(char *msec, char *cmd) { sleepwait = atoi(msec)+lastmillis; strcpy_s(sleepcmd, cmd); };
-COMMANDN(sleep, sleepf, ARG_2STR);
 
 void updateworld(int millis)        // main game update loop
 {
@@ -327,13 +323,6 @@ void attack(bool on)
 
 void jumpn(bool on) { if(!intermission && (player1->jumpnext = on)) respawn(); };
 
-COMMAND(backward, ARG_DOWN);
-COMMAND(forward, ARG_DOWN);
-COMMAND(left, ARG_DOWN);
-COMMAND(right, ARG_DOWN);
-COMMANDN(jump, jumpn, ARG_DOWN);
-COMMAND(attack, ARG_DOWN);
-COMMAND(showscores, ARG_DOWN);
 
 void fixplayer1range()
 {
@@ -482,4 +471,22 @@ startmap(OFString *name)
 	conoutf("game mode is %s", modestr(gamemode));
 }
 
-COMMANDN(map, changemap, ARG_1STR);
+void
+init_clientgame()
+{
+	COMMAND(mode, ARG_1INT);
+	COMMANDN(sleep, sleepf, ARG_2STR);
+	COMMAND(backward, ARG_DOWN);
+	COMMAND(forward, ARG_DOWN);
+	COMMAND(left, ARG_DOWN);
+	COMMAND(right, ARG_DOWN);
+	COMMANDN(jump, jumpn, ARG_DOWN);
+	COMMAND(attack, ARG_DOWN);
+	COMMAND(showscores, ARG_DOWN);
+	COMMANDN(map, changemap, ARG_1STR);
+
+	VAR(gamemode, 1, 0, 0);
+	VARP(sensitivity, 0, 10, 10000);
+	VARP(sensitivityscale, 1, 1, 10000);
+	VARP(invmouse, 0, 0, 1);
+}

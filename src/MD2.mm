@@ -267,9 +267,6 @@ getmminfo(int i)
 	return (MapModelInfo*)0;
 }
 
-COMMAND(mapmodel, ARG_5STR);
-COMMAND(mapmodelreset, ARG_NONE);
-
 void
 rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x,
     float y, float z, float yaw, float pitch, bool teammate, float scale,
@@ -320,4 +317,11 @@ rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x,
 			      snap: snap
 			  basetime: basetime];
 	}
+}
+
+void
+init_MD2()
+{
+	COMMAND(mapmodel, ARG_5STR);
+	COMMAND(mapmodelreset, ARG_NONE);
 }

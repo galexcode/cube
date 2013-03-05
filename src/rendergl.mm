@@ -2,13 +2,13 @@
 
 #include "cube.h"
 
-#ifdef __MACH__
-#define GL_COMBINE_EXT GL_COMBINE_ARB
-#define GL_COMBINE_RGB_EXT GL_COMBINE_RGB_ARB
-#define GL_SOURCE0_RGB_EXT GL_SOURCE0_RGB_ARB
-#define GL_SOURCE1_RGB_EXT GL_SOURCE1_RGB_ARB
-#define GL_PRIMARY_COLOR_EXT GL_PRIMARY_COLOR_ARB
-#define GL_RGB_SCALE_EXT GL_RGB_SCALE_ARB
+#ifdef __APPLE__
+# define GL_COMBINE_EXT GL_COMBINE_ARB
+# define GL_COMBINE_RGB_EXT GL_COMBINE_RGB_ARB
+# define GL_SOURCE0_RGB_EXT GL_SOURCE0_RGB_ARB
+# define GL_SOURCE1_RGB_EXT GL_SOURCE1_RGB_ARB
+# define GL_PRIMARY_COLOR_EXT GL_PRIMARY_COLOR_ARB
+# define GL_RGB_SCALE_EXT GL_RGB_SCALE_ARB
 #endif
 
 extern int curvert;
@@ -170,9 +170,6 @@ void texture(char *aframe, char *name)
     path(n);
 };
 
-COMMAND(texturereset, ARG_NONE);
-COMMAND(texture, ARG_2STR);
-
 int lookuptexture(int tex, int &xs, int &ys)
 {
     int frame = 0;                      // other frames?
@@ -271,15 +268,18 @@ void addstrip(int tex, int start, int n)
     s.num = n;
 };
 
-VARFP(gamma, 30, 100, 300,
+static int gamma;
+
+static void
+var_gamma(void)
 {
-    float f = gamma/100.0f;
-    if(SDL_SetGamma(f,f,f)==-1)
-    {
-        conoutf("Could not set gamma (card/driver doesn't support it?)");
-        conoutf("sdl: %s", SDL_GetError());
-    };
-});
+	float f = gamma / 100.0f;
+	if (SDL_SetGamma(f, f, f) == -1) {
+		conoutf("Could not set gamma "
+		    "(card/driver doesn't support it?)");
+		conoutf("sdl: %s", SDL_GetError());
+	}
+}
 
 void transplayer()
 {
@@ -292,14 +292,11 @@ void transplayer()
     glTranslated(-player1->o.x, (player1->state==CS_DEAD ? player1->eyeheight-0.2f : 0)-player1->o.z, -player1->o.y);
 };
 
-VARP(fov, 10, 105, 120);
+static int fov;
 
 int xtraverts;
 
-VAR(fog, 64, 180, 1024);
-VAR(fogcolour, 0, 0x8099B3, 0xFFFFFF);
-
-VARP(hudgun,0,1,1);
+static int fog, fogcolour, hudgun;
 
 static OFString *const hudgunnames[] = {
 	@"hudguns/fist",
@@ -443,3 +440,15 @@ void gl_drawframe(int w, int h, float curfps)
     glEnable(GL_FOG);
 };
 
+void
+init_rendergl()
+{
+	COMMAND(texturereset, ARG_NONE);
+	COMMAND(texture, ARG_2STR);
+
+	VARFP(gamma, 30, 100, 300);
+	VARP(fov, 10, 105, 120);
+	VAR(fog, 64, 180, 1024);
+	VAR(fogcolour, 0, 0x8099B3, 0xFFFFFF);
+	VARP(hudgun, 0, 1, 1);
+}

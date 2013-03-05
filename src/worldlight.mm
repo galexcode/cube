@@ -4,7 +4,7 @@
 
 extern bool hasoverbright;
 
-VAR(lightscale,1,4,100);
+static int lightscale;
 
 void lightray(float bx, float by, persistent_entity &light)     // done in realtime, needs to be fast
 {
@@ -157,7 +157,7 @@ void calclight()
     setvar("fullbright", 0);
 };
 
-VARP(dynlight, 0, 16, 32);
+static int dynlight;
 
 vector<block *> dlights;
 
@@ -211,4 +211,9 @@ void blockpaste(block &b)
     remipmore(b);
 };
 
-
+void
+init_worldlight()
+{
+	VAR(lightscale, 1, 4, 100);
+	VARP(dynlight, 0, 16, 32);
+}

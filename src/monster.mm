@@ -5,7 +5,13 @@
 dvector monsters;
 int nextmonster, spawnremain, numkilled, monstertotal, mtimestart;
 
-VARF(skill, 1, 3, 10, conoutf("skill is now %d", skill));
+static int skill;
+
+static void
+var_skill(void)
+{
+	conoutf("skill is now %d", skill);
+}
 
 dvector &getmonsters() { return monsters; };
 void restoremonsterstate() { loopv(monsters) if(monsters[i]->state==CS_DEAD) numkilled++; };        // for savegames
@@ -336,3 +342,9 @@ void monsterrender()
 {
     loopv(monsters) renderclient(monsters[i], false, monstertypes[monsters[i]->mtype].mdlname, monsters[i]->mtype==5, monstertypes[monsters[i]->mtype].mscale/10.0f);
 };
+
+void
+init_monster()
+{
+	VARF(skill, 1, 3, 10);
+}

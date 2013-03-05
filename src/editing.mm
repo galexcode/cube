@@ -7,13 +7,7 @@ bool editmode = false;
 // the current selection, used by almost all editing commands
 // invariant: all code assumes that these are kept inside MINBORD distance of the edge of the map
 
-block sel =
-{
-    variable("selx",  0, 0, 4096, &sel.x,  NULL, false),
-    variable("sely",  0, 0, 4096, &sel.y,  NULL, false),
-    variable("selxs", 0, 0, 4096, &sel.xs, NULL, false),
-    variable("selys", 0, 0, 4096, &sel.ys, NULL, false),
-};
+block sel;
 
 int selh = 0;
 bool selset = false;
@@ -30,7 +24,7 @@ int lastx, lasty, lasth;
 int lasttype = 0, lasttex = 0;
 sqr rtex;
 
-VAR(editing,0,0,1);
+static int editing;
 
 void toggleedit()
 {
@@ -52,8 +46,6 @@ void toggleedit()
     selset = false;
     editing = editmode;
 };
-
-COMMANDN(edittoggle, toggleedit, ARG_NONE);
 
 void correctsel()                                       // ensures above invariant
 {
@@ -98,7 +90,7 @@ void makesel()
     if(selset) rtex = *S(sel.x, sel.y);
 };
 
-VAR(flrceil,0,0,2);
+static int flrceil;
 
 float sheight(sqr *s, sqr *t, float z)                  // finds out z height when cursor points at wall
 {
@@ -182,7 +174,7 @@ void cursorupdate()                                     // called every frame fr
 };
 
 vector<block *> undos;                                  // unlimited undo
-VARP(undomegs, 0, 1, 10);                                // bounded by n megs
+static int undomegs;					// bounded by n megs
 
 void pruneundos(int maxremain)                          // bound memory
 {
@@ -287,8 +279,6 @@ void editheight(int flr, int amount)
     addmsg(1, 7, SV_EDITH, sel.x, sel.y, sel.xs, sel.ys, isfloor, amount);
 };
 
-COMMAND(editheight, ARG_2INT);
-
 void edittexxy(int type, int t, block &sel)
 {
     loopselxy(switch(type)
@@ -351,10 +341,6 @@ void heightfield(int t) { edittype(t==0 ? FHF : CHF); };
 void solid(int t)       { edittype(t==0 ? SPACE : SOLID); };
 void corner()           { edittype(CORNER); };
 
-COMMAND(heightfield, ARG_1INT);
-COMMAND(solid, ARG_1INT);
-COMMAND(corner, ARG_NONE);
-
 void editequalisexy(bool isfloor, block &sel)
 {
     int low = 127, hi = -128;
@@ -378,7 +364,6 @@ void equalize(int flr)
     addmsg(1, 6, SV_EDITE, sel.x, sel.y, sel.xs, sel.ys, isfloor);
 };
 
-COMMAND(equalize, ARG_1INT);
 
 void setvdeltaxy(int delta, block &sel)
 {
@@ -450,13 +435,19 @@ void perlin(int scale, int seed, int psize)
     sel.ys--;
 };
 
-VARF(fullbright, 0, 0, 1,
-    if(fullbright)
-    {
-        if(noteditmode()) return;
-        loopi(mipsize) world[i].r = world[i].g = world[i].b = 176;
-    };
-);
+static int fullbright;
+
+static void
+var_fullbright(void)
+{
+	if (fullbright) {
+		if( noteditmode())
+			return;
+
+		loopi(mipsize)
+			world[i].r = world[i].g = world[i].b = 176;
+	}
+}
 
 void edittag(int tag)
 {
@@ -470,18 +461,36 @@ void newent(char *what, char *a1, char *a2, char *a3, char *a4)
     newentity(sel.x, sel.y, (int)player1->o.z, what, ATOI(a1), ATOI(a2), ATOI(a3), ATOI(a4));
 };
 
-COMMANDN(select, selectpos, ARG_4INT);
-COMMAND(edittag, ARG_1INT);
-COMMAND(replace, ARG_NONE);
-COMMAND(archvertex, ARG_3INT);
-COMMAND(arch, ARG_2INT);
-COMMAND(slope, ARG_2INT);
-COMMANDN(vdelta, setvdelta, ARG_1INT);
-COMMANDN(undo, editundo, ARG_NONE);
-COMMAND(copy, ARG_NONE);
-COMMAND(paste, ARG_NONE);
-COMMAND(edittex, ARG_2INT);
-COMMAND(newent, ARG_5STR);
-COMMAND(perlin, ARG_3INT);
+void
+init_editing()
+{
+	COMMANDN(edittoggle, toggleedit, ARG_NONE);
+	COMMAND(editheight, ARG_2INT);
+	COMMAND(heightfield, ARG_1INT);
+	COMMAND(solid, ARG_1INT);
+	COMMAND(corner, ARG_NONE);
+	COMMAND(equalize, ARG_1INT);
+	COMMANDN(select, selectpos, ARG_4INT);
+	COMMAND(edittag, ARG_1INT);
+	COMMAND(replace, ARG_NONE);
+	COMMAND(archvertex, ARG_3INT);
+	COMMAND(arch, ARG_2INT);
+	COMMAND(slope, ARG_2INT);
+	COMMANDN(vdelta, setvdelta, ARG_1INT);
+	COMMANDN(undo, editundo, ARG_NONE);
+	COMMAND(copy, ARG_NONE);
+	COMMAND(paste, ARG_NONE);
+	COMMAND(edittex, ARG_2INT);
+	COMMAND(newent, ARG_5STR);
+	COMMAND(perlin, ARG_3INT);
 
+	VAR(editing, 0, 0, 1);
+	VAR(flrceil, 0, 0, 2);
+	VARP(undomegs, 0, 1, 10);
+	VARF(fullbright, 0, 0, 1);
 
+	sel.x = variable("selx",  0, 0, 4096, &sel.x,  NULL, false);
+	sel.y = variable("sely",  0, 0, 4096, &sel.y,  NULL, false);
+	sel.xs = variable("selxs", 0, 0, 4096, &sel.xs, NULL, false);
+	sel.ys = variable("selys", 0, 0, 4096, &sel.ys, NULL, false);
+}

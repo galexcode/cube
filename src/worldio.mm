@@ -361,5 +361,8 @@ load_world(OFString *mname)
     execfile([mcfname UTF8String]);
 };
 
-COMMANDN(savemap, save_world, ARG_1STR);
-
+void
+init_worldio()
+{
+	COMMANDN(savemap, save_world, ARG_1STR);
+}

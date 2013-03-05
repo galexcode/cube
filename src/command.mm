@@ -71,8 +71,6 @@ void alias(char *name, char *action)
 	}
 }
 
-COMMAND(alias, ARG_2STR);
-
 // variable's and commands are registered through globals, see cube.h
 
 int
@@ -118,7 +116,7 @@ bool
 identexists(char *name)
 {
 	@autoreleasepool {
-		return ([idents[@(name)] storage] != nil);
+		return ([idents[@(name)] storage] != NULL);
 	}
 }
 
@@ -513,8 +511,6 @@ void writecfg()
 	}
 }
 
-COMMAND(writecfg, ARG_NONE);
-
 // below the commands that implement a small imperative language. thanks to the semantics of
 // () and [] expressions, any control construct can be defined trivially.
 
@@ -549,28 +545,44 @@ void at(char *s, char *pos)
     concat(s);
 };
 
-COMMANDN(loop, loopa, ARG_2STR);
-COMMANDN(while, whilea, ARG_2STR);
-COMMANDN(if, ifthen, ARG_3STR);
-COMMAND(onrelease, ARG_DWN1);
-COMMAND(exec, ARG_1STR);
-COMMAND(concat, ARG_VARI);
-COMMAND(concatword, ARG_VARI);
-COMMAND(at, ARG_2STR);
-COMMAND(listlen, ARG_1EST);
+int add(int a, int b)   { return a+b; };
+int mul(int a, int b)   { return a*b; };
+int sub(int a, int b)   { return a-b; };
+int divi(int a, int b)  { return b ? a/b : 0; };
+int mod(int a, int b)   { return b ? a%b : 0; };
+int equal(int a, int b) { return (int)(a==b); };
+int lt(int a, int b)    { return (int)(a<b); };
+int gt(int a, int b)    { return (int)(a>b); };
 
-int add(int a, int b)   { return a+b; };         COMMANDN(+, add, ARG_2EXP);
-int mul(int a, int b)   { return a*b; };         COMMANDN(*, mul, ARG_2EXP);
-int sub(int a, int b)   { return a-b; };         COMMANDN(-, sub, ARG_2EXP);
-int divi(int a, int b)  { return b ? a/b : 0; }; COMMANDN(div, divi, ARG_2EXP);
-int mod(int a, int b)   { return b ? a%b : 0; }; COMMAND(mod, ARG_2EXP);
-int equal(int a, int b) { return (int)(a==b); }; COMMANDN(=, equal, ARG_2EXP);
-int lt(int a, int b)    { return (int)(a<b); };  COMMANDN(<, lt, ARG_2EXP);
-int gt(int a, int b)    { return (int)(a>b); };  COMMANDN(>, gt, ARG_2EXP);
+int strcmpa(char *a, char *b) { return strcmp(a,b)==0; };
 
-int strcmpa(char *a, char *b) { return strcmp(a,b)==0; };  COMMANDN(strcmp, strcmpa, ARG_2EST);
+int rndn(int a)    { return a>0 ? rnd(a) : 0; };
 
-int rndn(int a)    { return a>0 ? rnd(a) : 0; };  COMMANDN(rnd, rndn, ARG_1EXP);
+int explastmillis() { return lastmillis; };
 
-int explastmillis() { return lastmillis; };  COMMANDN(millis, explastmillis, ARG_1EXP);
-
+void
+init_command()
+{
+	COMMAND(alias, ARG_2STR);
+	COMMAND(writecfg, ARG_NONE);
+	COMMANDN(loop, loopa, ARG_2STR);
+	COMMANDN(while, whilea, ARG_2STR);
+	COMMANDN(if, ifthen, ARG_3STR);
+	COMMAND(onrelease, ARG_DWN1);
+	COMMAND(exec, ARG_1STR);
+	COMMAND(concat, ARG_VARI);
+	COMMAND(concatword, ARG_VARI);
+	COMMAND(at, ARG_2STR);
+	COMMAND(listlen, ARG_1EST);
+	COMMANDN(+, add, ARG_2EXP);
+	COMMANDN(*, mul, ARG_2EXP);
+	COMMANDN(-, sub, ARG_2EXP);
+	COMMANDN(div, divi, ARG_2EXP);
+	COMMAND(mod, ARG_2EXP);
+	COMMANDN(=, equal, ARG_2EXP);
+	COMMANDN(<, lt, ARG_2EXP);
+	COMMANDN(>, gt, ARG_2EXP);
+	COMMANDN(strcmp, strcmpa, ARG_2EST);
+	COMMANDN(rnd, rndn, ARG_1EXP);
+	COMMANDN(millis, explastmillis, ARG_1EXP);
+}

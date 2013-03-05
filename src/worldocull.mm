@@ -10,8 +10,6 @@ float odist = 256;
 
 void toggleocull() { ocull = !ocull; };
 
-COMMAND(toggleocull, ARG_NONE);
-
 // constructs occlusion map: cast rays in all directions on the 2d plane and record distance.
 // done exactly once per frame.
 
@@ -134,3 +132,8 @@ int isoccluded(float vx, float vy, float cx, float cy, float csize)     // v = v
     return 1;                                       // cube is entirely occluded
 };
 
+void
+init_worldocull()
+{
+	COMMAND(toggleocull, ARG_NONE);
+}

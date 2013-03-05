@@ -6,8 +6,7 @@
 #define USE_MIXER
 //#endif
 
-VARP(soundvol, 0, 255, 255);
-VARP(musicvol, 0, 128, 255);
+static int soundvol, musicvol;
 bool nosound = false;
 
 #define MAXCHAN 32
@@ -49,7 +48,7 @@ void stopsound()
     };
 };
 
-VAR(soundbufferlen, 128, 1024, 4096);
+static int soundbufferlen;
 
 void initsound()
 {
@@ -105,8 +104,6 @@ void music(char *name)
     };
 };
 
-COMMAND(music, ARG_1STR);
-
 #ifdef USE_MIXER
 vector<Mix_Chunk *> samples;
 #else
@@ -123,8 +120,6 @@ int registersound(char *name)
     return samples.length()-1;
 };
 
-COMMAND(registersound, ARG_1EST);
-
 void cleansound()
 {
     if(nosound) return;
@@ -136,7 +131,7 @@ void cleansound()
     #endif
 };
 
-VAR(stereo, 0, 1, 1);
+static int stereo;
 
 void updatechanvol(int chan, vec *loc)
 {
@@ -223,4 +218,16 @@ void playsound(int n, vec *loc)
 };
 
 void sound(int n) { playsound(n, NULL); };
-COMMAND(sound, ARG_1INT);
+
+void
+init_sound()
+{
+	COMMAND(music, ARG_1STR);
+	COMMAND(registersound, ARG_1EST);
+	COMMAND(sound, ARG_1INT);
+
+	VARP(soundvol, 0, 255, 255);
+	VARP(musicvol, 0, 128, 255);
+	VAR(soundbufferlen, 128, 1024, 4096);
+	VAR(stereo, 0, 1, 1);
+}

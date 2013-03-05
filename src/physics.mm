@@ -162,7 +162,7 @@ bool collide(dynent *d, bool spawn, float drop, float rise)
 
 float rad(float x) { return x*3.14159f/180; };
 
-VARP(maxroll, 0, 3, 20);
+static int maxroll;
 
 int physicsfraction = 0, physicsrepeat = 0;
 const int MINFRAMETIME = 20; // physics always simulated at 50fps or better
@@ -321,3 +321,8 @@ void moveplayer(dynent *pl, int moveres, bool local)
     loopi(physicsrepeat) moveplayer(pl, moveres, local, i ? curtime/physicsrepeat : curtime-curtime/physicsrepeat*(physicsrepeat-1));
 };
 
+void
+init_physics()
+{
+	VARP(maxroll, 0, 3, 20);
+}

@@ -107,10 +107,6 @@ void menuitem(char *text, char *action)
     mi.action = action[0] ? newstring(action) : mi.text;
 };
 
-COMMAND(menuitem, ARG_2STR);
-COMMAND(showmenu, ARG_1STR);
-COMMAND(newmenu, ARG_1STR);
-
 bool menukey(int code, bool isdown)
 {
     if(vmenu<=0) return false;
@@ -143,3 +139,11 @@ bool menukey(int code, bool isdown)
     };
     return true;
 };
+
+void
+init_menus()
+{
+	COMMAND(menuitem, ARG_2STR);
+	COMMAND(showmenu, ARG_1STR);
+	COMMAND(newmenu, ARG_1STR);
+}

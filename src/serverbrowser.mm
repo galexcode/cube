@@ -287,10 +287,6 @@ void updatefrommaster()
     servermenu();
 };
 
-COMMAND(addserver, ARG_1STR);
-COMMAND(servermenu, ARG_NONE);
-COMMAND(updatefrommaster, ARG_NONE);
-
 void
 writeservercfg()
 {
@@ -305,3 +301,10 @@ writeservercfg()
 	}
 }
 
+void
+init_serverbrowser()
+{
+	COMMAND(addserver, ARG_1STR);
+	COMMAND(servermenu, ARG_NONE);
+	COMMAND(updatefrommaster, ARG_NONE);
+}

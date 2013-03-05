@@ -16,10 +16,10 @@ alloc(int s)
 	return b;
 }
 
-int scr_w = 640;
-int scr_h = 480;
+static int scr_w = 640;
+static int scr_h = 480;
 
-void
+static void
 screenshot()
 {
 	SDL_Surface *image;
@@ -61,9 +61,6 @@ quit()
 	[Cube quit];
 }
 
-COMMAND(screenshot, ARG_NONE);
-COMMAND(quit, ARG_NONE);
-
 void
 keyrepeat(bool on)
 {
@@ -71,8 +68,15 @@ keyrepeat(bool on)
 	    ? SDL_DEFAULT_REPEAT_DELAY : 0, SDL_DEFAULT_REPEAT_INTERVAL);
 }
 
-VARF(gamespeed, 10, 100, 1000, if(multiplayer()) gamespeed = 100);
-VARP(minmillis, 0, 5, 1000);
+static int gamespeed;
+static int minmillis;
+
+static void
+var_gamespeed(void)
+{
+	if (multiplayer())
+		gamespeed = 100;
+}
 
 int islittleendian = 1;
 int framesinmap = 0;
@@ -121,9 +125,6 @@ int framesinmap = 0;
 	char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
 	islittleendian = *((char *)&islittleendian);
 
-#define log(s) conoutf("init: %s", s)
-	log("sdl");
-
 	@autoreleasepool {
 		OFArray *arguments = [OFApplication arguments];
 
@@ -156,6 +157,37 @@ int framesinmap = 0;
 			else conoutf("unknown commandline argument");
 		}
 	}
+
+	COMMAND(screenshot, ARG_NONE);
+	COMMAND(quit, ARG_NONE);
+	VARF(gamespeed, 10, 100, 1000);
+	VARP(minmillis, 0, 5, 1000);
+
+	init_MD2();
+	init_client();
+	init_clientextras();
+	init_clientgame();
+	init_command();
+	init_console();
+	init_editing();
+	init_menus();
+	init_monster();
+	init_physics();
+	init_rendercubes();
+	init_renderextras();
+	init_rendergl();
+	init_renderparticles();
+	init_savegamedemo();
+	init_serverbrowser();
+	init_sound();
+	init_weapon();
+	init_world();
+	init_worldio();
+	init_worldlight();
+	init_worldocull();
+
+#define log(s) conoutf("init: %s", s)
+	log("sdl");
 
 #ifdef _DEBUG
 	par = SDL_INIT_NOPARACHUTE;

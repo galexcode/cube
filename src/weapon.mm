@@ -48,8 +48,6 @@ void weapon(char *a1, char *a2, char *a3)
               a3[0] ? atoi(a3) : -1);
 };
 
-COMMAND(weapon, ARG_3STR);
-
 void createrays(vec &from, vec &to)             // create random spread of rays for the shotgun
 {
     vdist(dist, dvec, from, to);
@@ -339,4 +337,8 @@ void shoot(dynent *d, vec &targ)
     if(d->monsterstate) raydamage(player1, from, to, d, -1);
 };
 
-
+void
+init_weapon()
+{
+	COMMAND(weapon, ARG_3STR);
+}
