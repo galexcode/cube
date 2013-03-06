@@ -302,7 +302,7 @@ enum    // function signatures for script functions, see command.cpp
 #include <SDL.h>
 #include <SDL_image.h>
 
-#include <enet/enet.h>
+#include "enet/enet.h"
 
 /*
  * zlib includes unistd.h, which complains about __block. This is a workaround.
