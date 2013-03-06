@@ -472,6 +472,14 @@ startmap(OFString *name)
 }
 
 void
+changemapcmd(char *name)
+{
+	@autoreleasepool {
+		changemap(@(name));
+	}
+}
+
+void
 init_clientgame()
 {
 	COMMAND(mode, ARG_1INT);
@@ -483,7 +491,7 @@ init_clientgame()
 	COMMANDN(jump, jumpn, ARG_DOWN);
 	COMMAND(attack, ARG_DOWN);
 	COMMAND(showscores, ARG_DOWN);
-	COMMANDN(map, changemap, ARG_1STR);
+	COMMANDN(map, changemapcmd, ARG_1STR);
 
 	VAR(gamemode, 1, 0, 0);
 	VARP(sensitivity, 0, 10, 10000);
