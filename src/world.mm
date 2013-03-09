@@ -39,15 +39,26 @@ void settag(int tag, int type)          // set all cubes with "tag" to space, if
 void resettagareas() { settag(0, 0); };                                                         // reset for editing or map saving
 void settagareas() { settag(0, 1); loopv(ents) if(ents[i].type==CARROT) setspawn(i, true); };   // set for playing
 
-void trigger(int tag, int type, bool savegame)
+void
+trigger(int tag, int type, bool savegame)
 {
-    if(!tag) return;
-    settag(tag, type);
-    if(!savegame && type!=3) playsound(S_RUMBLE);
-    sprintf_sd(aliasname)("level_trigger_%d", tag);
-    if(identexists(aliasname)) execute(aliasname);
-    if(type==2) endsp(false);
-};
+	if (tag == 0)
+		return;
+
+	settag(tag, type);
+
+	if (!savegame && type != 3)
+		playsound(S_RUMBLE);
+
+	sprintf_sd(aliasname)("level_trigger_%d", tag);
+	@autoreleasepool {
+		if (identexists(@(aliasname)))
+			execute(aliasname);
+
+		if (type == 2)
+			endsp(false);
+	}
+}
 
 // main geometric mipmapping routine, recursively rebuild mipmaps within block b.
 // tries to produce cube out of 4 lower level mips as well as possible,
@@ -58,7 +69,7 @@ void trigger(int tag, int type, bool savegame)
 void remip(block &b, int level)
 {
     if(level>=SMALLEST_FACTOR) return;
-    int lighterr = getvar("lighterror")*3;
+    int lighterr = getvar(@"lighterror")*3;
     sqr *w = wmip[level];
     sqr *v = wmip[level+1];
     int ws = ssize>>level;

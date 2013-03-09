@@ -154,7 +154,7 @@ void calclight()
 
     block b = { 1, 1, ssize-2, ssize-2 };
     postlightarea(b);
-    setvar("fullbright", 0);
+    setvar(@"fullbright", 0);
 };
 
 static int dynlight;

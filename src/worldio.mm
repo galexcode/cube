@@ -354,7 +354,10 @@ load_world(OFString *mname)
     loopl(256)
     {
         sprintf_sd(aliasname)("level_trigger_%d", l);     // can this be done smarter?
-        if(identexists(aliasname)) alias(aliasname, "");
+	@autoreleasepool {
+            if (identexists(@(aliasname)))
+                alias(aliasname, "");
+	}
     };
     execfile("data/default_map_settings.cfg");
     execfile([pcfname UTF8String]);

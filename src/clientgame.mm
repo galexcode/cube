@@ -460,9 +460,9 @@ startmap(OFString *name)
 	if (editmode)
 		toggleedit();
 
-	setvar("gamespeed", 100);
-	setvar("fog", 180);
-	setvar("fogcolour", 0x8099B3);
+	setvar(@"gamespeed", 100);
+	setvar(@"fog", 180);
+	setvar(@"fogcolour", 0x8099B3);
 
 	showscores(false);
 	intermission = false;

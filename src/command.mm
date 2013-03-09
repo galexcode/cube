@@ -74,50 +74,42 @@ void alias(char *name, char *action)
 // variable's and commands are registered through globals, see cube.h
 
 int
-variable(char *name, int min, int cur, int max, int *storage, void (*fun)(),
+variable(OFString *name, int min, int cur, int max, int *storage, void (*fun)(),
     bool persist)
 {
-	@autoreleasepool {
-		if (idents == nil)
-			idents = [OFMutableDictionary new];
+	if (idents == nil)
+		idents = [OFMutableDictionary new];
 
-		Ident *v = [Ident new];
-		v.type = ID_VAR;
-		v.name = @(name);
-		v.min = min;
-		v.max = max;
-		v.storage = storage;
-		v.fun = fun;
-		v.persist = true;
+	Ident *v = [Ident new];
+	v.type = ID_VAR;
+	v.name = name;
+	v.min = min;
+	v.max = max;
+	v.storage = storage;
+	v.fun = fun;
+	v.persist = true;
 
-		idents[@(name)] = v;
-	}
+	idents[name] = v;
 
 	return cur;
 }
 
 void
-setvar(char *name, int i)
+setvar(OFString *name, int i)
 {
-	@autoreleasepool {
-		*[idents[@(name)] storage] = i;
-	}
+	*[idents[name] storage] = i;
 }
 
 int
-getvar(char *name)
+getvar(OFString *name)
 {
-	@autoreleasepool {
-		return *[idents[@(name)] storage];
-	}
+	return *[idents[name] storage];
 }
 
 bool
-identexists(char *name)
+identexists(OFString *name)
 {
-	@autoreleasepool {
-		return ([idents[@(name)] storage] != NULL);
-	}
+	return ([idents[name] storage] != NULL);
 }
 
 char*

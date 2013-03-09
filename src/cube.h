@@ -271,10 +271,10 @@ enum    // function signatures for script functions, see command.cpp
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
 #define COMMANDN(name, fun, nargs) addcommand(@#name, (void (*)())fun, nargs)
 #define COMMAND(name, nargs) COMMANDN(name, name, nargs)
-#define VARP(name, min, cur, max) name = variable(#name, min, cur, max, &name, NULL, true)
-#define VAR(name, min, cur, max)  name = variable(#name, min, cur, max, &name, NULL, false)
-#define VARF(name, min, cur, max)  name = variable(#name, min, cur, max, &name, var_##name, false)
-#define VARFP(name, min, cur, max) name = variable(#name, min, cur, max, &name, var_##name, true)
+#define VARP(name, min, cur, max) name = variable(@#name, min, cur, max, &name, NULL, true)
+#define VAR(name, min, cur, max)  name = variable(@#name, min, cur, max, &name, NULL, false)
+#define VARF(name, min, cur, max)  name = variable(@#name, min, cur, max, &name, var_##name, false)
+#define VARFP(name, min, cur, max) name = variable(@#name, min, cur, max, &name, var_##name, true)
 
 #define ATOI(s) strtol(s, NULL, 0)		// supports hexadecimal numbers
 

@@ -2,10 +2,10 @@
 
 // command
 extern void init_command(void);
-extern int variable(char *name, int min, int cur, int max, int *storage, void (*fun)(), bool persist);
-extern void setvar(char *name, int i);
-extern int getvar(char *name);
-extern bool identexists(char *name);
+extern int variable(OFString *name, int min, int cur, int max, int *storage, void (*fun)(), bool persist);
+extern void setvar(OFString *name, int i);
+extern int getvar(OFString *name);
+extern bool identexists(OFString *name);
 extern bool addcommand(OFString *name, void (*fun)(), int narg);
 extern int execute(char *p, bool down = true);
 extern void exec(char *cfgfile);

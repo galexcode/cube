@@ -489,8 +489,8 @@ init_editing()
 	VARP(undomegs, 0, 1, 10);
 	VARF(fullbright, 0, 0, 1);
 
-	sel.x = variable("selx",  0, 0, 4096, &sel.x,  NULL, false);
-	sel.y = variable("sely",  0, 0, 4096, &sel.y,  NULL, false);
-	sel.xs = variable("selxs", 0, 0, 4096, &sel.xs, NULL, false);
-	sel.ys = variable("selys", 0, 0, 4096, &sel.ys, NULL, false);
+	sel.x = variable(@"selx",  0, 0, 4096, &sel.x,  NULL, false);
+	sel.y = variable(@"sely",  0, 0, 4096, &sel.y,  NULL, false);
+	sel.xs = variable(@"selxs", 0, 0, 4096, &sel.xs, NULL, false);
+	sel.ys = variable(@"selys", 0, 0, 4096, &sel.ys, NULL, false);
 }
