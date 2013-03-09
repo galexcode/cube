@@ -124,7 +124,7 @@ void serverms(int mode, int numplayers, int minremain, char *smapname, int secon
     };
 };
 
-void servermsinit(const char *master, char *sdesc, bool listen)
+void servermsinit(const char *master, const char *sdesc, bool listen)
 {
 	const char *mid = strstr(master, "/");
     if(!mid) mid = master;

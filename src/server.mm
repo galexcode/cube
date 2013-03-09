@@ -40,14 +40,14 @@ void restoreserverstate(vector<entity> &ents)   // hack: called from savegame co
     };
 };
 
-int interm = 0, minremain = 0, mapend = 0;
-bool mapreload = false;
+static int interm = 0, minremain = 0, mapend = 0;
+static bool mapreload = false;
 
-char *serverpassword = "";
+static OFString *serverpassword = @"";
 
-bool isdedicated;
-ENetHost * serverhost = NULL;
-int bsend = 0, brec = 0, laststatus = 0, lastsec = 0;
+static bool isdedicated;
+static ENetHost *serverhost = NULL;
+static int bsend = 0, brec = 0, laststatus = 0, lastsec = 0;
 
 #define MAXOBUF 100000
 
@@ -269,7 +269,7 @@ void send_welcome(int n)
     putint(p, n);
     putint(p, PROTOCOL_VERSION);
     putint(p, smapname[0]);
-    sendstring(serverpassword, p);
+    sendstring([serverpassword UTF8String], p);
     putint(p, clients.length()>maxclients);
     if(smapname[0])
     {
@@ -438,31 +438,47 @@ void localconnect()
     send_welcome(&c-&clients[0]);
 };
 
-void initserver(bool dedicated, int uprate, char *sdesc, char *ip, char *master, char *passwd, int maxcl)
+void
+initserver(bool dedicated, int uprate, OFString *sdesc, OFString *ip,
+    OFString *master, OFString *passwd, int maxcl)
 {
-    serverpassword = passwd;
-    maxclients = maxcl;
-	servermsinit(master ? master : "wouter.fov120.com/cube/masterserver/", sdesc, dedicated);
+	serverpassword = passwd;
+	maxclients = maxcl;
 
-    if(isdedicated = dedicated)
-    {
-        ENetAddress address = { ENET_HOST_ANY, CUBE_SERVER_PORT };
-        if(*ip && enet_address_set_host(&address, ip)<0) printf("WARNING: server ip not resolved");
-        serverhost = enet_host_create(&address, MAXCLIENTS, 0, uprate);
-	if(!serverhost) [Cube fatalError: @"could not create server host\n"];
-        loopi(MAXCLIENTS) serverhost->peers[i].data = (void *)-1;
-    };
+	if (master != nil)
+		servermsinit([master UTF8String], [sdesc UTF8String],
+		    dedicated);
+	else
+		servermsinit("wouter.fov120.com/cube/masterserver/",
+		    [sdesc UTF8String], dedicated);
 
-    resetserverifempty();
+	if ((isdedicated = dedicated)) {
+		ENetAddress address = { ENET_HOST_ANY, CUBE_SERVER_PORT };
+		if (ip.length > 0 && enet_address_set_host(&address,
+		    [ip UTF8String]) < 0)
+			printf("WARNING: server ip not resolved");
 
-    if(isdedicated)       // do not return, this becomes main loop
-    {
-        #ifdef WIN32
-        SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-        #endif
-        printf("dedicated server started, waiting for clients...\nCtrl-C to exit\n\n");
-        atexit(cleanupserver);
-        atexit(enet_deinitialize);
-        for(;;) serverslice(/*enet_time_get_sec()*/time(NULL), 5);
-    };
-};
+		serverhost = enet_host_create(&address, MAXCLIENTS, 0, uprate);
+		if (serverhost == NULL)
+			[Cube fatalError: @"could not create server host\n"];
+
+		loopi(MAXCLIENTS)
+		    serverhost->peers[i].data = (void *)-1;
+	}
+
+	resetserverifempty();
+
+	// do not return, this becomes main loop
+	if (isdedicated) {
+#ifdef WIN32
+		SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+#endif
+		printf("dedicated server started, waiting for clients...\n"
+		    "Ctrl-C to exit\n\n");
+		atexit(cleanupserver);
+		atexit(enet_deinitialize);
+
+		for (;;)
+			serverslice(/*enet_time_get_sec()*/time(NULL), 5);
+	}
+}

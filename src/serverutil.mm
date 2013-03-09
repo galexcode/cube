@@ -24,7 +24,7 @@ int getint(uchar *&p)
     else return c;
 };
 
-void sendstring(char *t, uchar *&p)
+void sendstring(const char *t, uchar *&p)
 {
     while(*t) putint(p, *t++);
     putint(p, 0);
@@ -97,6 +97,24 @@ ENetPacket *recvmap(int n)
 + (void)fatalError: (OFString*)message;
 @end
 
+void
+localservertoclient(uchar *buf, int len)
+{
+}
+
+void*
+alloc(int s)
+{
+	void *b = calloc(1,s);
+
+	if (b == NULL)
+		[Cube fatalError: @"no memory!"];
+
+	return b;
+}
+
+OF_APPLICATION_DELEGATE(Cube)
+
 @implementation Cube
 + (void)fatalError: (OFString*)message
 {
@@ -104,36 +122,43 @@ ENetPacket *recvmap(int n)
 	[of_stdout writeFormat: @"servererror: %@\n", message];
 	[OFApplication terminateWithStatus: 1];
 }
-@end
 
-void localservertoclient(uchar *buf, int len) {};
-void *alloc(int s) { void *b = calloc(1,s); if(!b) [Cube fatalError: @"no memory!"]; return b; };
-
-int main(int argc, char* argv[])
+- (void)applicationDidFinishLaunching
 {
-    int uprate = 0, maxcl = 4;
-    char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
+	int uprate = 0, maxcl = 4;
+	OFString *sdesc = @"", *ip = @"", *master = nil, *passwd = @"";
 
-    for(int i = 1; i<argc; i++)
-    {
-        char *a = &argv[i][2];
-        if(argv[i][0]=='-') switch(argv[i][1])
-        {
-            case 'u': uprate = atoi(a); break;
-            case 'n': sdesc  = a; break;
-            case 'i': ip     = a; break;
-            case 'm': master = a; break;
-            case 'p': passwd = a; break;
-            case 'c': maxcl  = atoi(a); break;
-            default: printf("WARNING: unknown commandline option\n");
-        };
-    };
+	@autoreleasepool {
+		OFArray *arguments = [OFApplication arguments];
 
-    if(enet_initialize()<0) [Cube fatalError: @"Unable to initialise network module"];
-    initserver(true, uprate, sdesc, ip, master, passwd, maxcl);
-    return 0;
-};
+		for (OFString *arg in arguments) {
+			OFString *a = [arg substringWithRange:
+			    of_range(2, arg.length - 2)];
+
+			if ([arg isEqual: @"-u"])
+				uprate = [a decimalValue];
+			else if ([arg isEqual: @"-n"])
+				sdesc = a;
+			else if ([arg isEqual: @"-i"])
+				ip = a;
+			else if ([arg isEqual: @"-m"])
+				master = a;
+			else if ([arg isEqual: @"-p"])
+				passwd = a;
+			else if ([arg isEqual: @"-c"])
+				maxcl = [a decimalValue];
+			else
+				printf("WARNING: unknown commandline "
+				    "option\n");
+		}
+	}
+
+	if (enet_initialize() < 0)
+		[Cube fatalError: @"Unable to initialise network module"];
+
+	initserver(true, uprate, sdesc, ip, master, passwd, maxcl);
+
+	[OFApplication terminate];
+}
+@end
 #endif
-
-
-

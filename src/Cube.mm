@@ -122,7 +122,7 @@ int framesinmap = 0;
 {
 	bool dedicated = false;
 	int fs = SDL_FULLSCREEN, par = 0, uprate = 0, maxcl = 4;
-	char *sdesc = "", *ip = "", *master = NULL, *passwd = "";
+	OFString *sdesc = @"", *ip = @"", *master = nil, *passwd = @"";
 	islittleendian = *((char *)&islittleendian);
 
 	@autoreleasepool {
@@ -143,13 +143,13 @@ int framesinmap = 0;
 			else if ([arg hasPrefix: @"-u"])
 				uprate = [a decimalValue];
 			else if ([arg hasPrefix: @"-n"])
-				sdesc = strdup([a UTF8String]);
+				sdesc = a;
 			else if ([arg hasPrefix: @"-i"])
-				ip = strdup([a UTF8String]);
+				ip = a;
 			else if ([arg hasPrefix: @"-m"])
-				master = strdup([a UTF8String]);
+				master = a;
 			else if ([arg hasPrefix: @"-p"])
-				passwd = strdup([a UTF8String]);
+				passwd = a;
 			else if ([arg hasPrefix: @"-c"])
 				maxcl = [a decimalValue];
 			else if ([arg hasPrefix: @"-"])

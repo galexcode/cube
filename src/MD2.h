@@ -1,3 +1,5 @@
+#import <ObjFW/ObjFW.h>
+
 struct md2_header {
 	int magic;
 	int version;

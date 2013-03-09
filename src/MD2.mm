@@ -235,16 +235,17 @@ snap(int sn, float f)
 @end
 
 void
-mapmodel(char *rad, char *h, char *zoff, char *snap, const char *name)
+mapmodel(OFString *rad, OFString *h, OFString *zoff, OFString *snap,
+    OFString *name)
 {
 	@autoreleasepool {
-		MD2 *model = [MD2 modelForName: @(name)];
+		MD2 *model = [MD2 modelForName: name];
 
 		MapModelInfo *mmi = [MapModelInfo new];
-		mmi.rad = atoi(rad);
-		mmi.h = atoi(h);
-		mmi.zoff = atoi(zoff);
-		mmi.snap = atoi(snap);
+		mmi.rad = [rad decimalValue];
+		mmi.h = [h decimalValue];
+		mmi.zoff = [zoff decimalValue];
+		mmi.snap = [snap decimalValue];
 		mmi.name = model.loadName;
 		model.mmi = mmi;
 
@@ -322,6 +323,6 @@ rendermodel(OFString *mdl, int frame, int range, int tex, float rad, float x,
 void
 init_MD2()
 {
-	COMMAND(mapmodel, ARG_5STR);
+	COMMAND(mapmodel, ARG_5OSTR);
 	COMMAND(mapmodelreset, ARG_NONE);
 }
