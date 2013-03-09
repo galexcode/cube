@@ -48,26 +48,25 @@ exchangestr(char *o, const char *n)
 
 static OFMutableDictionary *idents = nil;
 
-void alias(char *name, char *action)
+void
+alias(OFString *name, OFString *action)
 {
-	@autoreleasepool {
-		Ident *b = idents[@(name)];
+	Ident *b = idents[name];
 
-		if (b == nil) {
-			b = [Ident new];
-			b.type = ID_ALIAS;
-			b.name = @(name);
-			b.action = @(action);
-			b.persist = true;
+	if (b == nil) {
+		b = [Ident new];
+		b.type = ID_ALIAS;
+		b.name = name;
+		b.action = action;
+		b.persist = true;
 
-			idents[@(name)] = b;
-		} else {
-			if (b.type == ID_ALIAS)
-				b.action = @(action);
-			else
-				conoutf("cannot redefine builtin %s with an "
-				    "alias", name);
-		}
+		idents[name] = b;
+	} else {
+		if (b.type == ID_ALIAS)
+			b.action = action;
+		else
+			conoutf("cannot redefine builtin %s with an alias",
+			    [name UTF8String]);
 	}
 }
 
@@ -129,18 +128,16 @@ getalias(char *name)
 bool
 addcommand(OFString *name, void (*fun)(), int narg)
 {
-	@autoreleasepool {
-		if (idents == nil)
-			idents = [OFMutableDictionary new];
+	if (idents == nil)
+		idents = [OFMutableDictionary new];
 
-		Ident *c = [Ident new];
-		c.type = ID_COMMAND;
-		c.name = name;
-		c.fun = fun;
-		c.narg = narg;
+	Ident *c = [Ident new];
+	c.type = ID_COMMAND;
+	c.name = name;
+	c.fun = fun;
+	c.narg = narg;
 
-		idents[name] = c;
-	}
+	idents[name] = c;
 
 	return false;
 }
@@ -307,6 +304,22 @@ int execute(char *p, bool isdown)
 						if (isdown)
 							((void (__cdecl *)(char *, char *, char*, char*, char*))i.fun)(w[1], w[2], w[3], w[4], w[5]);
 						break;
+					case ARG_1OSTR:
+						if (isdown)
+							((void (__cdecl *)(OFString*))i.fun)(@(w[1]));
+						break;
+					case ARG_2OSTR:
+						if (isdown)
+							((void (__cdecl *)(OFString*, OFString*))i.fun)(@(w[1]), @(w[2]));
+						break;
+					case ARG_3OSTR:
+						if (isdown)
+							((void (__cdecl *)(OFString*, OFString*, OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]));
+						break;
+					case ARG_5OSTR:
+						if (isdown)
+							((void (__cdecl *)(OFString*, OFString*, OFString*, OFString*, OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]), @(w[4]), @(w[5]));
+						break;
 					case ARG_DOWN:
 						((void (__cdecl *)(bool))i.fun)(isdown);
 						break;
@@ -380,8 +393,10 @@ int execute(char *p, bool isdown)
 				case ID_ALIAS:
 					for (int i = 1; i < numargs; i++) {
 						// set any arguments as (global) arg values so functions can access them
-						sprintf_sd(t)("arg%d", i);
-						alias(t, w[i]);
+						OFString *arg = [OFString
+						    stringWithFormat: @"arg%d",
+						    i];
+						alias(arg, @(w[i]));
 					}
 
 					char *action = newstring([i.action UTF8String]);   // create new string here because alias could rebind itself
@@ -506,14 +521,26 @@ void writecfg()
 // below the commands that implement a small imperative language. thanks to the semantics of
 // () and [] expressions, any control construct can be defined trivially.
 
-void intset(char *name, int v) { string b; itoa(b, v); alias(name, b); };
+void
+intset(char *name, int v)
+{
+	@autoreleasepool {
+		alias(@(name), [OFString stringWithFormat: @"%d", v]);
+	}
+}
 
 void ifthen(char *cond, char *thenp, char *elsep) { execute(cond[0]!='0' ? thenp : elsep); };
 void loopa(char *times, char *body) { int t = atoi(times); loopi(t) { intset("i", i); execute(body); }; };
 void whilea(char *cond, char *body) { while(execute(cond)) execute(body); };    // can't get any simpler than this :)
 void onrelease(bool on, char *body) { if(!on) execute(body); };
 
-void concat(char *s) { alias("s", s); };
+void
+concat(char *s)
+{
+	@autoreleasepool {
+		alias(@"s", @(s));
+	}
+}
 
 void concatword(char *s)
 {
@@ -555,7 +582,7 @@ int explastmillis() { return lastmillis; };
 void
 init_command()
 {
-	COMMAND(alias, ARG_2STR);
+	COMMAND(alias, ARG_2OSTR);
 	COMMAND(writecfg, ARG_NONE);
 	COMMANDN(loop, loopa, ARG_2STR);
 	COMMANDN(while, whilea, ARG_2STR);

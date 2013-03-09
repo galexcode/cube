@@ -12,7 +12,7 @@ extern void exec(char *cfgfile);
 extern bool execfile(const char *cfgfile);
 extern void resetcomplete();
 extern void complete(char *s);
-extern void alias(char *name, char *action);
+extern void alias(OFString *name, OFString *action);
 extern char *getalias(char *name);
 extern void writecfg();
 
