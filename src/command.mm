@@ -1,5 +1,5 @@
-// command.cpp: implements the parsing and execution of a tiny script language which
-// is largely backwards compatible with the quake console language.
+// command.cpp: implements the parsing and execution of a tiny script language
+// which is largely backwards compatible with the quake console language.
 
 #include "cube.h"
 
@@ -13,7 +13,7 @@ enum { ID_VAR, ID_COMMAND, ID_ALIAS };
 	int *_storage;       // ID_VAR
 	void (*_fun)();      // ID_VAR, ID_COMMAND
 	int _narg;           // ID_VAR, ID_COMMAND
-	OFString *_action;       // ID_ALIAS
+	OFString *_action;   // ID_ALIAS
 	bool _persist;
 }
 
@@ -33,13 +33,13 @@ enum { ID_VAR, ID_COMMAND, ID_ALIAS };
 @synthesize persist = _persist;
 @end
 
-void
+static void
 itoa(char *s, int i)
 {
 	sprintf_s(s)("%d", i);
 }
 
-char*
+static char*
 exchangestr(char *o, const char *n)
 {
 	gp()->deallocstr(o);
@@ -71,7 +71,6 @@ alias(OFString *name, OFString *action)
 }
 
 // variable's and commands are registered through globals, see cube.h
-
 int
 variable(OFString *name, int min, int cur, int max, int *storage, void (*fun)(),
     bool persist)
@@ -142,52 +141,79 @@ addcommand(OFString *name, void (*fun)(), int narg)
 	return false;
 }
 
-char *parseexp(char *&p, int right)             // parse any nested set of () or []
+// parse any nested set of () or []
+static char*
+parseexp(char *&p, int right)
 {
-    int left = *p++;
-    char *word = p;
-    for(int brak = 1; brak; )
-    {
-        int c = *p++;
-        if(c=='\r') *(p-1) = ' ';               // hack
-        if(c==left) brak++;
-        else if(c==right) brak--;
-        else if(!c) { p--; conoutf("missing \"%c\"", right); return NULL; };
-    };
-    char *s = newstring(word, p-word-1);
-    if(left=='(')
-    {
-        string t;
-        itoa(t, execute(s));                    // evaluate () exps directly, and substitute result
-        s = exchangestr(s, t);
-    };
-    return s;
-};
+	int left = *p++;
+	char *word = p;
 
-char *parseword(char *&p)                       // parse single argument, including expressions
+	for (int brak = 1; brak;) {
+		int c = *p++;
+		if (c == '\r')
+			// hack
+			*(p - 1) = ' ';
+		if (c == left)
+			brak++;
+		else if (c == right)
+			brak--;
+		else if (!c) {
+			p--;
+			conoutf("missing \"%c\"", right);
+			return NULL;
+		}
+	}
+
+	char *s = newstring(word, p - word - 1);
+
+	if (left == '(') {
+		string t;
+		// evaluate () exps directly, and substitute result
+		itoa(t, execute(s));
+		s = exchangestr(s, t);
+	}
+
+	return s;
+}
+
+// parse single argument, including expressions
+static char*
+parseword(char *&p)
 {
-    p += strspn(p, " \t\r");
-    if(p[0]=='/' && p[1]=='/') p += strcspn(p, "\n\0");
-    if(*p=='\"')
-    {
-        p++;
-        char *word = p;
-        p += strcspn(p, "\"\r\n\0");
-        char *s = newstring(word, p-word);
-        if(*p=='\"') p++;
-        return s;
-    };
-    if(*p=='(') return parseexp(p, ')');
-    if(*p=='[') return parseexp(p, ']');
-    char *word = p;
-    p += strcspn(p, "; \t\r\n\0");
-    if(p-word==0) return NULL;
-    return newstring(word, p-word);
-};
+	p += strspn(p, " \t\r");
+
+	if (p[0] == '/' && p[1] == '/')
+		p += strcspn(p, "\n\0");
+
+	if (*p=='\"') {
+		char *s, *word = ++p;
+
+		p += strcspn(p, "\"\r\n\0");
+		s = newstring(word, p-word);
+
+		if (*p == '\"')
+			p++;
+
+		return s;
+	}
+
+	if (*p == '(')
+		return parseexp(p, ')');
+	if (*p == '[')
+		return parseexp(p, ']');
+
+	char *word = p;
+	p += strcspn(p, "; \t\r\n\0");
+
+	if (p - word == 0)
+		return NULL;
+
+	return newstring(word, p-word);
+}
 
 // find value of ident referenced with $ in exp
-char
-*lookup(char *n)
+static char*
+lookup(char *n)
 {
 	@autoreleasepool {
 		Ident *i = idents[@(n + 1)];
@@ -209,8 +235,164 @@ char
 	return n;
 }
 
+static void
+execcmd(Ident *i, bool isdown, char **w, int numargs, int *val)
+{
+	// use very ad-hoc function signature, and just call it
+	switch (i.narg) {
+	case ARG_1INT:
+		if (isdown)
+			((void(*)(int))i.fun)(ATOI(w[1]));
+		break;
+	case ARG_2INT:
+		if (isdown)
+			((void(*)(int, int))i.fun)(ATOI(w[1]), ATOI(w[2]));
+		break;
+	case ARG_3INT:
+		if (isdown)
+			((void(*)(int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]),
+			    ATOI(w[3]));
+		break;
+	case ARG_4INT:
+		if (isdown)
+			((void(*)(int, int, int, int))i.fun)(ATOI(w[1]),
+			    ATOI(w[2]), ATOI(w[3]), ATOI(w[4]));
+		break;
+	case ARG_NONE:
+		if (isdown)
+			i.fun();
+		break;
+	case ARG_1STR:
+		if (isdown)
+			((void(*)(char*))i.fun)(w[1]);
+		break;
+	case ARG_2STR:
+		if (isdown)
+			((void(*)(char*, char*))i.fun)(w[1], w[2]);
+		break;
+	case ARG_3STR:
+		if (isdown)
+			((void(*)(char*, char*, char*))i.fun)(w[1], w[2], w[3]);
+		break;
+	case ARG_5STR:
+		if (isdown)
+			((void(*)(char*, char *, char*, char*, char*))i.fun)(
+			    w[1], w[2], w[3], w[4], w[5]);
+		break;
+	case ARG_1OSTR:
+		if (isdown)
+			((void(*)(OFString*))i.fun)(@(w[1]));
+		break;
+	case ARG_2OSTR:
+		if (isdown)
+			((void(*)(OFString*, OFString*))i.fun)(@(w[1]),
+			    @(w[2]));
+		break;
+	case ARG_3OSTR:
+		if (isdown)
+			((void(*)(OFString*, OFString*, OFString*))i.fun)(
+			    @(w[1]), @(w[2]), @(w[3]));
+		break;
+	case ARG_5OSTR:
+		if (isdown)
+			((void(*)(OFString*, OFString*, OFString*, OFString*,
+			    OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]),
+			    @(w[4]), @(w[5]));
+		break;
+	case ARG_DOWN:
+		((void(*)(bool))i.fun)(isdown);
+		break;
+	case ARG_DWN1:
+		((void(*)(bool, char*))i.fun)(isdown, w[1]);
+		break;
+	case ARG_1EXP:
+		if (isdown)
+			*val = ((int(*)(int))i.fun)(execute(w[1]));
+		break;
+	case ARG_2EXP:
+		if (isdown)
+			*val = ((int(*)(int, int))i.fun)(execute(w[1]),
+			    execute(w[2]));
+		break;
+	case ARG_1EST:
+		if (isdown)
+			*val = ((int(*)(char*))i.fun)(w[1]);
+		break;
+	case ARG_2EST:
+		if (isdown)
+			*val = ((int(*)(char*, char*))i.fun)(w[1], w[2]);
+		break;
+	case ARG_VARI:
+		if (isdown) {
+			// limit, remove
+			string r;
+
+			r[0] = 0;
+
+			for (int i = 1; i < numargs; i++) {
+				// make string-list out of all arguments
+				strcat_s(r, w[i]);
+
+				if (i == numargs - 1)
+					break;
+
+				strcat_s(r, " ");
+			}
+
+			((void(*)(char*))i.fun)(r);
+		}
+		break;
+	}
+}
+
+static void
+execvar(Ident *i, bool isdown, char **w, char *c)
+{
+	if (isdown) {
+		if (w[1][0] == 0)
+			// var with no value just prints its current value
+			conoutf("%s = %d", c, *i.storage);
+		else {
+			if (i.min > i.max)
+				conoutf("variable is read-only");
+			else {
+				int i1 = ATOI(w[1]);
+
+				if (i1 < i.min || i1 > i.max) {
+					// clamp to valid range
+					i1 = i1 < i.min ? i.min : i.max;
+					conoutf("valid range for %s is %d..%d",
+					    c, i.min, i.max);
+				}
+				*i.storage = i1;
+			}
+
+			if (i.fun != NULL)
+				// call trigger function if available
+				((void(*)())i.fun)();
+		}
+	}
+}
+
+static void
+execalias(Ident *i, bool isdown, char **w, int numargs, int *val)
+{
+	for (int i = 1; i < numargs; i++) {
+		// set any arguments as (global) arg values so functions can
+		// access them
+		OFString *arg = [OFString stringWithFormat: @"arg%d", i];
+		alias(arg, @(w[i]));
+	}
+
+	// create new string here because alias could rebind itself
+	char *action = newstring([i.action UTF8String]);
+	*val = execute(action, isdown);
+	gp()->deallocstr(action);
+}
+
 // all evaluation happens here, recursively
-int execute(char *p, bool isdown)
+int
+execute(char *p, bool isdown)
 {
 	const int MAXWORDS = 25;	// limit, remove
 	char *w[MAXWORDS];
@@ -237,12 +419,12 @@ int execute(char *p, bool isdown)
 			if (*s == '$')
 				s = lookup(s);
 			w[i] = s;
-		};
+		}
 
 		p += strcspn(p, ";\n\0");
 
 		// more statements if this isn't the end of the string
-		cont = *p++ != 0;
+		cont = (*p++ != 0);
 		char *c = w[0];
 
 		// strip irc-style command prefix
@@ -250,11 +432,11 @@ int execute(char *p, bool isdown)
 			c++;
 
 		// empty statement
-		if (!*c)
+		if (*c == 0)
 			continue;
 
 		@autoreleasepool {
-			Ident *i = idents[@(c)];;
+			Ident *i = idents[@(c)];
 
 			if (i == nil) {
 				val = ATOI(c);
@@ -265,144 +447,16 @@ int execute(char *p, bool isdown)
 				switch (i.type) {
 				// game defined commands
 				case ID_COMMAND:
-					// use very ad-hoc function signature,
-					// and just call it
-					switch (i.narg) {
-					case ARG_1INT:
-						if (isdown)
-							((void (__cdecl *)(int))i.fun)(ATOI(w[1]));
-						break;
-					case ARG_2INT:
-						if (isdown)
-							((void (__cdecl *)(int, int))i.fun)(ATOI(w[1]), ATOI(w[2]));
-						break;
-					case ARG_3INT:
-						if (isdown)
-							((void (__cdecl *)(int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3]));
-						break;
-					case ARG_4INT:
-						if (isdown)
-							((void (__cdecl *)(int, int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]), ATOI(w[3]), ATOI(w[4]));
-						break;
-					case ARG_NONE:
-						if (isdown)
-							((void (__cdecl *)())i.fun)();
-						break;
-					case ARG_1STR:
-						if (isdown)
-							((void (__cdecl *)(char *))i.fun)(w[1]);
-						break;
-					case ARG_2STR:
-						if (isdown)
-							((void (__cdecl *)(char *, char *))i.fun)(w[1], w[2]);
-						break;
-					case ARG_3STR:
-						if (isdown)
-							((void (__cdecl *)(char *, char *, char*))i.fun)(w[1], w[2], w[3]);
-						break;
-					case ARG_5STR:
-						if (isdown)
-							((void (__cdecl *)(char *, char *, char*, char*, char*))i.fun)(w[1], w[2], w[3], w[4], w[5]);
-						break;
-					case ARG_1OSTR:
-						if (isdown)
-							((void (__cdecl *)(OFString*))i.fun)(@(w[1]));
-						break;
-					case ARG_2OSTR:
-						if (isdown)
-							((void (__cdecl *)(OFString*, OFString*))i.fun)(@(w[1]), @(w[2]));
-						break;
-					case ARG_3OSTR:
-						if (isdown)
-							((void (__cdecl *)(OFString*, OFString*, OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]));
-						break;
-					case ARG_5OSTR:
-						if (isdown)
-							((void (__cdecl *)(OFString*, OFString*, OFString*, OFString*, OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]), @(w[4]), @(w[5]));
-						break;
-					case ARG_DOWN:
-						((void (__cdecl *)(bool))i.fun)(isdown);
-						break;
-					case ARG_DWN1:
-						((void (__cdecl *)(bool, char *))i.fun)(isdown, w[1]);
-						break;
-					case ARG_1EXP:
-						if (isdown)
-							val = ((int (__cdecl *)(int))i.fun)(execute(w[1]));
-						break;
-					case ARG_2EXP:
-						if (isdown)
-							val = ((int (__cdecl *)(int, int))i.fun)(execute(w[1]), execute(w[2]));
-						break;
-					case ARG_1EST:
-						if (isdown)
-							val = ((int (__cdecl *)(char *))i.fun)(w[1]);
-						break;
-					case ARG_2EST:
-						if (isdown)
-							val = ((int (__cdecl *)(char *, char *))i.fun)(w[1], w[2]);
-						break;
-					case ARG_VARI:
-						if (isdown) {
-							// limit, remove
-							string r;
-
-							r[0] = 0;
-
-							for (int i = 1; i < numargs; i++) {
-								// make string-list out of all arguments
-								strcat_s(r, w[i]);
-
-								if (i == numargs - 1)
-									break;
-
-								strcat_s(r, " ");
-							}
-							((void (__cdecl *)(char *))i.fun)(r);
-						}
-						break;
-					}
+					execcmd(i, isdown, w, numargs, &val);
 					break;
 				// game defined variabled
 				case ID_VAR:
-					if (isdown) {
-						if (!w[1][0])
-							// var with no value just prints its current value
-							conoutf("%s = %d", c, *i.storage);
-						else {
-							if (i.min > i.max)
-								conoutf("variable is read-only");
-							else {
-								int i1 = ATOI(w[1]);
-
-								if (i1 < i.min || i1 > i.max) {
-									// clamp to valid range
-									i1 = i1 < i.min ? i.min : i.max;
-									conoutf("valid range for %s is %d..%d", c, i.min, i.max);
-								}
-								*i.storage = i1;
-							}
-
-							if (i.fun != NULL)
-								// call trigger function if available
-								((void (__cdecl *)())i.fun)();
-						}
-					}
+					execvar(i, isdown, w, c);
 					break;
-				// alias, also used as functions and (global) variables
+				// alias, also used as functions and (global)
+				// variables
 				case ID_ALIAS:
-					for (int i = 1; i < numargs; i++) {
-						// set any arguments as (global) arg values so functions can access them
-						OFString *arg = [OFString
-						    stringWithFormat: @"arg%d",
-						    i];
-						alias(arg, @(w[i]));
-					}
-
-					char *action = newstring([i.action UTF8String]);   // create new string here because alias could rebind itself
-					val = execute(action, isdown);
-					gp()->deallocstr(action);
-
+					execalias(i, isdown, w, numargs, &val);
 					break;
 				}
 			}
@@ -419,9 +473,14 @@ int execute(char *p, bool isdown)
 
 int completesize = 0, completeidx = 0;
 
-void resetcomplete() { completesize = 0; };
+void
+resetcomplete()
+{
+	completesize = 0;
+}
 
-void complete(char *s)
+void
+complete(char *s)
 {
 	if (*s != '/') {
 		string t;
