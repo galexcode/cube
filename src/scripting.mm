@@ -3,35 +3,9 @@
 
 #include "cube.h"
 
-enum { ID_VAR, ID_COMMAND, ID_ALIAS };
-
-@interface Ident: OFObject
-{
-	int _type;           // one of ID_* above
-	OFString *_name;
-	int _min, _max;      // ID_VAR
-	int *_storage;       // ID_VAR
-	void (*_fun)();      // ID_VAR, ID_COMMAND
-	int _narg;           // ID_VAR, ID_COMMAND
-	OFString *_action;   // ID_ALIAS
-	bool _persist;
-}
-
-@property int type;
-@property (copy) OFString *name;
-@property int min, max;
-@property void (*fun)();
-@property int *storage;
-@property int narg;
-@property (copy) OFString *action;
-@property bool persist;
-@end
-
-@implementation Ident
-@synthesize type = _type, name = _name, min = _min, max = _max, fun = _fun;
-@synthesize storage = _storage, narg = _narg, action = _action;
-@synthesize persist = _persist;
-@end
+#import "Alias.h"
+#import "Command.h"
+#import "Variable.h"
 
 static void
 itoa(char *s, int i)
@@ -51,19 +25,18 @@ static OFMutableDictionary *idents = nil;
 void
 alias(OFString *name, OFString *action)
 {
-	Ident *b = idents[name];
+	Alias *alias = idents[name];
 
-	if (b == nil) {
-		b = [Ident new];
-		b.type = ID_ALIAS;
-		b.name = name;
-		b.action = action;
-		b.persist = true;
+	if (alias == nil) {
+		alias = [Alias new];
+		alias.name = name;
+		alias.action = action;
+		alias.persist = true;
 
-		idents[name] = b;
+		idents[name] = alias;
 	} else {
-		if (b.type == ID_ALIAS)
-			b.action = action;
+		if ([alias isKindOfClass: [Alias class]])
+			alias.action = action;
 		else
 			conoutf("cannot redefine builtin %s with an alias",
 			    [name UTF8String]);
@@ -78,8 +51,7 @@ variable(OFString *name, int min, int cur, int max, int *storage, void (*fun)(),
 	if (idents == nil)
 		idents = [OFMutableDictionary new];
 
-	Ident *v = [Ident new];
-	v.type = ID_VAR;
+	Variable *v = [Variable new];
 	v.name = name;
 	v.min = min;
 	v.max = max;
@@ -107,18 +79,18 @@ getvar(OFString *name)
 bool
 identexists(OFString *name)
 {
-	return ([idents[name] storage] != NULL);
+	return (idents[name] != nil);
 }
 
 char*
 getalias(char *name)
 {
 	@autoreleasepool {
-		Ident *i = idents[@(name)];
+		Alias *alias = idents[@(name)];
 
-		if (i.type == ID_ALIAS)
+		if ([alias isKindOfClass: [Alias class]])
 			/* FIXME: Evil cast as a temporary workaround */
-			return (char*)[i.action UTF8String];
+			return (char*)[alias.action UTF8String];
 	}
 
 	return NULL;
@@ -130,8 +102,7 @@ addcommand(OFString *name, void (*fun)(), int narg)
 	if (idents == nil)
 		idents = [OFMutableDictionary new];
 
-	Ident *c = [Ident new];
-	c.type = ID_COMMAND;
+	Command *c = [Command new];
 	c.name = name;
 	c.fun = fun;
 	c.narg = narg;
@@ -216,178 +187,21 @@ static char*
 lookup(char *n)
 {
 	@autoreleasepool {
-		Ident *i = idents[@(n + 1)];
+		id i = idents[@(n + 1)];
 
 		if (i != nil) {
-			switch (i.type) {
-			case ID_VAR:
+			if ([i isKindOfClass: [Variable class]]) {
 				string t;
-				itoa(t, *(i.storage));
+				itoa(t, *[i storage]);
 				return exchangestr(n, t);
-			case ID_ALIAS:
-				return exchangestr(n, [i.action UTF8String]);
-			}
+			} else if ([i isKindOfClass: [Alias class]])
+				return exchangestr(n, [[i action] UTF8String]);
 		}
 	}
 
-	conoutf("unknown alias lookup: %s", n+1);
+	conoutf("unknown alias lookup: %s", n + 1);
 
 	return n;
-}
-
-static void
-execcmd(Ident *i, bool isdown, char **w, int numargs, int *val)
-{
-	// use very ad-hoc function signature, and just call it
-	switch (i.narg) {
-	case ARG_1INT:
-		if (isdown)
-			((void(*)(int))i.fun)(ATOI(w[1]));
-		break;
-	case ARG_2INT:
-		if (isdown)
-			((void(*)(int, int))i.fun)(ATOI(w[1]), ATOI(w[2]));
-		break;
-	case ARG_3INT:
-		if (isdown)
-			((void(*)(int, int, int))i.fun)(ATOI(w[1]), ATOI(w[2]),
-			    ATOI(w[3]));
-		break;
-	case ARG_4INT:
-		if (isdown)
-			((void(*)(int, int, int, int))i.fun)(ATOI(w[1]),
-			    ATOI(w[2]), ATOI(w[3]), ATOI(w[4]));
-		break;
-	case ARG_NONE:
-		if (isdown)
-			i.fun();
-		break;
-	case ARG_1STR:
-		if (isdown)
-			((void(*)(char*))i.fun)(w[1]);
-		break;
-	case ARG_2STR:
-		if (isdown)
-			((void(*)(char*, char*))i.fun)(w[1], w[2]);
-		break;
-	case ARG_3STR:
-		if (isdown)
-			((void(*)(char*, char*, char*))i.fun)(w[1], w[2], w[3]);
-		break;
-	case ARG_5STR:
-		if (isdown)
-			((void(*)(char*, char *, char*, char*, char*))i.fun)(
-			    w[1], w[2], w[3], w[4], w[5]);
-		break;
-	case ARG_1OSTR:
-		if (isdown)
-			((void(*)(OFString*))i.fun)(@(w[1]));
-		break;
-	case ARG_2OSTR:
-		if (isdown)
-			((void(*)(OFString*, OFString*))i.fun)(@(w[1]),
-			    @(w[2]));
-		break;
-	case ARG_3OSTR:
-		if (isdown)
-			((void(*)(OFString*, OFString*, OFString*))i.fun)(
-			    @(w[1]), @(w[2]), @(w[3]));
-		break;
-	case ARG_5OSTR:
-		if (isdown)
-			((void(*)(OFString*, OFString*, OFString*, OFString*,
-			    OFString*))i.fun)(@(w[1]), @(w[2]), @(w[3]),
-			    @(w[4]), @(w[5]));
-		break;
-	case ARG_DOWN:
-		((void(*)(bool))i.fun)(isdown);
-		break;
-	case ARG_DWN1:
-		((void(*)(bool, char*))i.fun)(isdown, w[1]);
-		break;
-	case ARG_1EXP:
-		if (isdown)
-			*val = ((int(*)(int))i.fun)(execute(w[1]));
-		break;
-	case ARG_2EXP:
-		if (isdown)
-			*val = ((int(*)(int, int))i.fun)(execute(w[1]),
-			    execute(w[2]));
-		break;
-	case ARG_1EST:
-		if (isdown)
-			*val = ((int(*)(char*))i.fun)(w[1]);
-		break;
-	case ARG_2EST:
-		if (isdown)
-			*val = ((int(*)(char*, char*))i.fun)(w[1], w[2]);
-		break;
-	case ARG_VARI:
-		if (isdown) {
-			// limit, remove
-			string r;
-
-			r[0] = 0;
-
-			for (int i = 1; i < numargs; i++) {
-				// make string-list out of all arguments
-				strcat_s(r, w[i]);
-
-				if (i == numargs - 1)
-					break;
-
-				strcat_s(r, " ");
-			}
-
-			((void(*)(char*))i.fun)(r);
-		}
-		break;
-	}
-}
-
-static void
-execvar(Ident *i, bool isdown, char **w, char *c)
-{
-	if (isdown) {
-		if (w[1][0] == 0)
-			// var with no value just prints its current value
-			conoutf("%s = %d", c, *i.storage);
-		else {
-			if (i.min > i.max)
-				conoutf("variable is read-only");
-			else {
-				int i1 = ATOI(w[1]);
-
-				if (i1 < i.min || i1 > i.max) {
-					// clamp to valid range
-					i1 = i1 < i.min ? i.min : i.max;
-					conoutf("valid range for %s is %d..%d",
-					    c, i.min, i.max);
-				}
-				*i.storage = i1;
-			}
-
-			if (i.fun != NULL)
-				// call trigger function if available
-				((void(*)())i.fun)();
-		}
-	}
-}
-
-static void
-execalias(Ident *i, bool isdown, char **w, int numargs, int *val)
-{
-	for (int i = 1; i < numargs; i++) {
-		// set any arguments as (global) arg values so functions can
-		// access them
-		OFString *arg = [OFString stringWithFormat: @"arg%d", i];
-		alias(arg, @(w[i]));
-	}
-
-	// create new string here because alias could rebind itself
-	char *action = newstring([i.action UTF8String]);
-	*val = execute(action, isdown);
-	gp()->deallocstr(action);
 }
 
 // all evaluation happens here, recursively
@@ -436,7 +250,7 @@ execute(char *p, bool isdown)
 			continue;
 
 		@autoreleasepool {
-			Ident *i = idents[@(c)];
+			id i = idents[@(c)];
 
 			if (i == nil) {
 				val = ATOI(c);
@@ -444,21 +258,19 @@ execute(char *p, bool isdown)
 				if (!val && *c != '0')
 					conoutf("unknown command: %s", c);
 			} else {
-				switch (i.type) {
-				// game defined commands
-				case ID_COMMAND:
-					execcmd(i, isdown, w, numargs, &val);
-					break;
-				// game defined variabled
-				case ID_VAR:
-					execvar(i, isdown, w, c);
-					break;
-				// alias, also used as functions and (global)
-				// variables
-				case ID_ALIAS:
-					execalias(i, isdown, w, numargs, &val);
-					break;
-				}
+				// game defined command or alias (aliases are
+				// also used as functions and (global)
+				// variables)
+				if ([i isKindOfClass: [Command class]] ||
+				    [i isKindOfClass: [Alias class]])
+					val = [i executeWithArguments: w
+							argumentCount: numargs
+							       isDown: isdown];
+				// game defined variable
+				else if ([i isKindOfClass: [Variable class]])
+					[i assignWithName: c
+						    value: w[1]
+						   isDown: isdown];
 			}
 		}
 
@@ -557,10 +369,11 @@ void writecfg()
 		[f writeString: @"\n"];
 
 		[idents enumerateKeysAndObjectsUsingBlock:
-		    ^ (OFString *name, Ident *i, bool *stop) {
-			    if (i.type == ID_VAR && i.persist)
+		    ^ (OFString *name, Variable *v, bool *stop) {
+			    if ([v isKindOfClass: [Variable class]] &&
+				v.persist)
 				    [f writeFormat: @"%@ %d\n",
-						    i.name, *i.storage];
+						    v.name, *v.storage];
 		}];
 		[f writeString: @"\n"];
 
@@ -568,11 +381,11 @@ void writecfg()
 		[f writeString: @"\n"];
 
 		[idents enumerateKeysAndObjectsUsingBlock:
-		    ^ (OFString *name, Ident *i, bool *stop) {
-			if (i.type == ID_ALIAS &&
+		    ^ (OFString *name, Alias *a, bool *stop) {
+			if ([a isKindOfClass: [Alias class]] &&
 			    ![name hasPrefix: @"nextmap_"])
 				[f writeFormat: @"alias \"%@\" [%@]\n",
-						i.name, i.action];
+						a.name, a.action];
 		}];
 	}
 }

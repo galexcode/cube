@@ -2,13 +2,16 @@ OPT = -O3 -fomit-frame-pointer
 CPPFLAGS = -I../enet/include `sdl-config --cflags`
 LIBS = -L../enet -lenet `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU -lX11
 
-CLIENT_SRCS = Cube.mm			\
+CLIENT_SRCS = Alias.mm			\
+	      Command.mm		\
+	      Cube.mm			\
+	      Identifier.mm		\
 	      MD2.mm			\
+	      Variable.mm		\
 	      client.mm			\
 	      clientextras.mm		\
 	      clientgame.mm		\
 	      clients2c.mm		\
-	      command.mm 		\
 	      console.mm		\
 	      editing.mm		\
 	      entities.mm		\
@@ -22,6 +25,7 @@ CLIENT_SRCS = Cube.mm			\
 	      rendertext.mm 		\
 	      rndmap.mm 		\
 	      savegamedemo.mm 		\
+	      scripting.mm 		\
 	      server.mm 		\
 	      serverbrowser.mm 		\
 	      serverms.mm 		\
